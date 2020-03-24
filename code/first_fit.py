@@ -10,7 +10,7 @@ import sys
 import numpy as np
 import pandas as pd
 import matplotlib.pylab as plt
-from lmfit import Minimizer, Parameters
+from lmfit import Minimizer, Parameters, fit_report
 
 ## CONSTANTS ##
 
@@ -75,10 +75,11 @@ def main(argv):
                        fcn_args = (T, mu_max))
     fit_ = minner.minimize(method = 'leastsq')
 
+    print(fit_report(fit_))
     #Plot results 
     plt.scatter(T, mu_max)
     plt.plot(T, model.model(fit_.params, T, mu_max) + mu_max, color = 'red')
-    plt.show()
+    plt.savefig('../results/first_fit.pdf')
 
     return 0
 
