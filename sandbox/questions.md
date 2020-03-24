@@ -10,4 +10,5 @@ Thu Mar 19 12:00:32 CET 2020
 5. Literature reading. 
 	Introduction to TCP as a general concept, not just applied to growth rates
 6. What are the changes with respect to the python package of the guy?
+7. What does this package do? What do you expect? General outline? Why do we want such a package? Why is it useful to create a package?
 
