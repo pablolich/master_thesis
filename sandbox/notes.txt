@@ -4,3 +4,8 @@ A metabolic pathway consists of several enzymes, so maybe consider including dif
 consider adding enzyme inhibitors to check that things are not getting uncontroledo
 model extracellular enzymes to reflect the transport of substrates in the surroundings, their acquisition, and transport across the membrane for subsequ3ent intracellular metabolism.
 OC
+
+
+Tue Apr 21 13:24:33 CEST 2020
+
+Fix a realistic interval for chemical potentials in order to calculate reasonable Keq!

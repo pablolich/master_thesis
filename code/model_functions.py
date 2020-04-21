@@ -4,19 +4,22 @@ import matplotlib.pyplot as plt
 
 #Functions to calculate quantities in the model
 
-def r_cocient(S, P):
-    '''Computes reaction cocient from concentration of (S)ubstrates and
+def r_quotient(S, P):
+    '''Computes reaction quotient from concentration of (S)ubstrates and
     (P)roducts'''
-    return (P/S)
+    Q = P/S
+    #Turn nans to 0
+    nans = np.isnan(Q)
+    Q[nans] = 0
+    return (Q)
 
 def K_equilibrium(DeltaG, eta, DeltaGATP, R, T):
     '''Computes equilibrium constant from gibbs energies, R and T'''
     return (np.exp((-DeltaG - eta*DeltaGATP)/(R*T)))
 
-def theta(Q, Keq):
+def Theta(Q, Keq):
     '''Computes theta: how far is my reaction from equilibrium'''
     return (Q/Keq)
-
 
 def rate(q_max, theta, ks, kr, C):
     '''Computes rate of reaction'''
