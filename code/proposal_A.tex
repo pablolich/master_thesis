@@ -1,0 +1,69 @@
+\documentclass[titlepage,11pt]{article}
+\usepackage{graphicx} %To include figures
+\graphicspath{{../Results/}}
+\usepackage{lineno} % To count lines
+\usepackage{setspace} %To change line spacing
+\usepackage{cite} % To cite
+\usepackage{amsmath}
+\usepackage{pgfgantt}
+\usepackage[paper=a4paper,margin=2cm]{geometry}
+
+\onehalfspacing
+
+
+\begin{document}
+	
+	\title{\textbf{Thesis Proposal (Plan A)} }
+	\author{Pablo Lechón Alonso \\ [30pt]
+		Imperial College London}
+	
+	\maketitle
+	\begin{linenumbers}
+		\section{Introduction}
+			 Many models have been conceived to address the temperature dependence of performance traits. Some of them are phenomenological, i.e. \cite{Ratkowsky1982, Lactin1995}, gaussian and polynomial models, but the scientific community has gradually shifted towards proposing only mechanistic models. The first model of this type was obtained by identifying the temperature dependence of chemical reactions rates proposed by Arrhenius \cite{Arrhenius1889} with the thermal dependence of the metabolic rate
+			\begin{linenomath}
+				\begin{equation}
+				k = A e^{-E_a/kT}
+				\end{equation}
+			\end{linenomath}
+			where $ k $ is the metabolic rate, $ A $ is the potential reaction rate, $ E_a $ the activation energy, $ k $ the Boltzmann's constant and $ T $ the absolute temperature. Under his model, metabolic rate increases monotonically with temperature. Despite fitting well many data sets that span data between the minimum temperature and the temperature at which maximal metabolic rates are observed ($ T_{opt} $), it does a poor job fitting thermal performance curves (TPCs), which are unimodally shaped because the data spans a temperature range beyond $ T_{opt} $. The Arrhenius model assumes $ E_a $ to be constant with temperature. However, it is known that chemical reactions responsible for metabolic rates are enzyme-catalyzed. Therefore, it has been proposed that the activation or denaturalization of enzymes present in these reactions raise or lower $ E_a $. Allowing the activation energy to explicitly depend on $ T $ through the temperature dependence of the activation/inactivation of enzymes, produces models that capture the unimodal shape of TPCs \cite{Johnson1946, Schoolfield1981, Ratkowsky2005, DeLong2017}. Many models based on enzyme state changes have been used to capture this shape, and each of them make slightly different assumptions.
+			In this work we aim to create a python package that fits data to a set of TPC models and performs model averaging. Performing model averaging allows to weight each model by the amount of support we have for it. By model averaging, we are selecting which model's assumptions are best suited to each dataset.\\
+			Once the package is completed, the convenience of a hierarchical traits conceptual framework will be analyzed. The different biological traits that emerge when tracing macroscopic patterns down to fundamental first mechanisms that originate them, can be classified hierarchically. Thus, population growth models parameters like $ r_{max} $, $ \lambda $, $ K $... would be at the top of the trait hierarchy. In turn, the temperature variation of $ r_{max} $ is captured by the TPC models. The parameters of these models, such as $ T_{opt} $, $ CT_{min} $, $ CT_{max} $, would be in the second level of the trait hierarchy. Some TPC models allow for expressions of the latter parameters in terms of basal traits ($ \Delta C_p $, $ \Delta H_A $, ...), the ones in the lowest level of our trait hierarchy. \\
+			One of the advantages of this framework is that it allows to obtain lower-level parameter values from the models of higher-level parameters, instead of having to measure them. For example, bacterial growth rate $ r_{max} $ can be directly measured, or obtained by fitting the underlying bacterial growth curve. Obtaining $ r_{max} $ by fitting a growth curve is better than measuring it for various reasons. First, measure a population growth is easier than measuring population growth rate in the same way that measuring a function is easier that measuring its derivative. Second, it is faster, since Less points are required to determine the TPC shape accurately ($ r_{max} $ from the fits is more precise than directly measured $ r_{max} $). Therefore, if the TPC obtained from fitted $ r_{max} $ is similar enough to the measured TPC, we would have provided a cheaper and faster experimental procedure to obtaining data of thermal performance curves for bacterial growth rate.
+		\section{Methods}
+			The data will come from a database of many bacterial population growth curves that Saamrat has. Python will be used to perform the fitting of the models at different levels. Three population models (Baranyi, Buchanan, Gompertz) will be fitted to the bacterial growth data, and around 15 TPC models will be fitted to the growth rates at different temperatures.
+		\section{Outcomes}
+			Two sets of TPC obtained from measured $ r_{max} $ and fitted $ r_{max} $ will be obtained and compared in order to test the validity of our hypotheses. We expect that they will be similar enough, so that we can conclude suggesting the use of the second method to characterize TPC curves.
+		\section{Project feasibility}
+			A Gantt chart is presented below to support the feasibilty of the proyect.
+		\begin{center}
+			
+			\begin{ganttchart}[time slot format=isodate,
+											x unit=0.08cm,
+											hgrid]{2020-4-6}{2020-8-31} 
+				\gantttitlecalendar{month=name} \\ 
+				\ganttgroup{Write \textit{pyTPC} package}{2020-4-6}{2020-7-1}\\
+				\ganttbar{Minimal working example }{2020-4-6}{2020-5-15}\\
+				\ganttbar{Include more models}{2020-5-16}{2020-6-15}\\
+				\ganttbar{Clean up code}{2020-6-16}{2020-6-30}\\
+				\ganttgroup{Trait Hierarchies}{2020-7-1}{2020-8-1}\\
+				\ganttbar{Fit all data}{2020-7-1}{2020-7-15}\\
+				\ganttbar{Generate results}{2020-7-16}{2020-8-10}\\
+				\ganttgroup{Write-up}{2020-8-2}{2020-8-31}
+				
+			\end{ganttchart}
+		The \textbf{minimal working example} consists of a full fitting pipeline 
+		\end{center}
+	
+	Furthermore, leakage of carbon substrates to the environment also occurs via the release of multiple substrates as bacteria break one or more substrates into others, which can be expressed as the sum of losses across $M$ substrates, i.e., for the $j^{th}$ substrate,
+	$$\label{eq:leakage} p_{L,j} = \sum\limits_{k = 1}^M l_{jk} $$
+	
+	Substituting the above two equations for $U_i$ \eqref{eq:uptake} and $p_{L,j}$ \eqref{eq:leakage} into eqn \eqref{eq:pop3} gives,
+	$$ \frac{1}{C_i}\frac{dC_i}{dt} = \left(\sum_{j=1}^M u_{ij} S_j \left(1 - \sum\limits_{k = 1}^M l_{jk}\right)\right) - R_i $$
+	
+	\end{linenumbers}
+
+	\newpage
+	\bibliographystyle{unsrt}
+	\bibliography{/Users/pablolechon/library}
+	\end{document}

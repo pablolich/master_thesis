@@ -1,0 +1,64 @@
+\documentclass[titlepage,11pt]{article}
+\usepackage{graphicx} %To include figures
+\graphicspath{{../Results/}}
+\usepackage{lineno} % To count lines
+\usepackage{setspace} %To change line spacing
+\usepackage{amsmath}
+\usepackage{pgfgantt}
+\usepackage[paper=a4paper,margin=2cm]{geometry}
+\usepackage{natbib} % flexible citations
+\bibliographystyle{plainnat} % plain bibliography
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault} % to get arial font
+
+\onehalfspacing
+
+
+\begin{document}
+	
+	\title{\textbf{ Thermodynamic restrictions in microbial community assembly}}
+	\author{Pablo Lechón Alonso \\ [30pt]
+		Imperial College London}
+	
+	\maketitle
+	\begin{linenumbers}
+		\section{Introduction}
+		Recent advances in genomic sequencing have allowed ecologists to map the species distribution of microbial communities with an unprecedentedly high resolution. Consequently, general empirical patterns in the assembly of these communities have been revealed. To explain these patterns, a variety of general consumer-resource models that span increasing levels of complexity have been used \citep{MacArthur1970, Goldford2018, Marsland2019a}.  However, none of them explicitly account for the underlying biochemical reactions responsible for substrate uptake rates. Instead, they introduce functional responses that lump all the underlying chemical kinetics into aggregate reactions that are described by approximate rate laws \citep{DeJong2017}, such as Henri–Michaelis–Menten kinetics that give rise to the Monod type II functional response. This treatment assumes environments rich in chemical energy, but when that is not the case, a more careful treatment of the energy uptake rate of bacteria is needed. \\
+		Currently, a model is being developed by Ph.D. Jacob Cook, that incorporates the biochemical reactions happening inside bacterial cells in the expression of the rate of energy uptake. This description facilitates the consideration of biological landscapes that are more thermodynamically consistent, such as reversible enzyme kinetics, thus providing a more faithful representation of biochemical reactions happening in natural environments \citep{Jin2007}.\\
+		In this project, I propose to dive into the literature to theoretically justify the reversibility of enzyme-catalyzed biochemical reactions underlying the energy uptake of microbial communities. The outcomes of this investigation will likely enable me to extract sensible constraints for what type of biochemical reaction networks are appropriate. Furthermore, the thermodynamically supported model will be tested against population dynamics data to determine the suitability of this characterization. 
+		
+		\section{Methods}
+		The results of this project will be obtained from two main sources; microbial metabolism and community assembly literature reading, and comparing model simulations to population dynamics data. A list of readings is included in section \ref{sec:feasibility}. To test the suitability of the thermodynamic constraints added to the model, simulations will be run and compared to population dynamics data taken from the BioTraits data set. These simulations will be implemented in the following way. Each cell will be represented by an object in python, and descrribed by two matrices. First, a matrix of reaction energies characteristic of each microbial strain $ \boldsymbol{\eta_s} $. Second, a matrix of the present reaction rates $ \boldsymbol{R_s} $ that specifies what are the rates of the reaction network possesed  by strain $ s $. The simulation will be performed by numerical integration, ie, through discrete time steps. In each step two sequential numerical integrations will be performed: metabolites concentrations, and population dynamics. Firstly, the metabolite concentrations will be updated according to the reversible enzyme kinetics differential equations applied to the reaction network of each strain. The updated concentrations will allow me to calculate the reaction rates for that time step. Secondly, reaction rates will be used to calculate the energy uptake rates, and integrate Jacob's model.
+		\section{Outcomes}
+		A set of appropriate thermodynamic constraints for the biochemical reaction network happening inside bacterial cells during microbial community assembly will be uncovered through this project, and its effect on the overall population dynamics of the community quantified.
+		\section{Project feasibility}\label{sec:feasibility}
+		A Gantt chart is presented below to support the feasibility of the project.
+		\begin{center}
+			
+			\begin{ganttchart}[time slot format=isodate,
+				x unit=0.08cm,
+				hgrid]{2020-4-6}{2020-8-31} 
+				\gantttitlecalendar{month=name} \\ 
+				\ganttgroup{Read literature}{2020-4-6}{2020-4-31}\\
+				\ganttgroup{Implement model}{2020-4-31}{2020-5-31}\\
+				\ganttgroup{Run Simulations}{2020-6-1}{2020-7-31}\\
+				\ganttgroup{Write-up}{2020-4-6}{2020-8-31}\\
+			\end{ganttchart}\\
+			
+		\end{center}
+		Tentative list of readings:
+		\begin{itemize}
+			\item The thermodynamics and kinetics of microbial metabolism - Qusheng Jin et al.
+			\item Systems Biology: Mathematical Modeling and Model Analysis - Andreas Kremlin
+			\item Patterns and Processes of Microbial Community Assembly - Diana R. Nemergut et al.
+			\item Mathematical modeling of microbes: metabolism, gene expression, and growth - Hidde de Jong
+			\item Macroscopic and microscopic restrictions on chemical kinetics - Robert K. Boyd
+			\item Thermodynamic and kinetic descriptions of equilibrium - P. L. Corio
+			\item Thermodynamics and foundations of mass-action kinetics - Milosav Pekar
+			\item Modeling Nature: Episodes in the History of Population Ecology - Sharon E. Kingsland
+		\end{itemize}
+	\end{linenumbers}
+	
+	\newpage
+	\bibliography{/Users/pablolechon/library.bib}
+\end{document}

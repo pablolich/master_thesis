@@ -1,0 +1,46 @@
+\documentclass[titlepage,11pt]{article}
+\usepackage{graphicx} %To include figures
+\graphicspath{{../results/}}
+\usepackage{lineno} % To count lines
+\usepackage{setspace} %To change line spacing
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage[paper=a4paper,margin=2cm]{geometry}
+
+\onehalfspacing
+
+
+\begin{document}
+	
+	\title{\textbf{Unifying different mechanisms that explain $ T_{opt} $ of biochemical reactions. }}
+	\author{Pablo Lechón Alonso \\ [30pt]
+		Imperial College London}
+	\date{Keywords: thermal performacne curve, Reaction-diffusion thermodinamics, enzyme-catalyzed reactions, metabolic rate}
+	\maketitle
+	\begin{linenumbers}
+		\section{Introduction}
+			Understanding life is the process of tracing the macroscopic patterns we observe down to the fundamental first mechanisms that originate them. Research regarding the role of temperature in metabolic rate embodies a paradigmatic example of this process. Many models based on different theories have been conceived to adress this question. Some of them are phenomenological, i.e. \cite{Ratkowsky1982, Lactin1995}, gaussian and polynomial models, but the scientific community has gradually shifted towards proposing only mechanistic models. The first model of this type was obtained by identifying the temperature dependance of chemical reactions rates proposed by Arrhenius \cite{Arrhenius1889} wiht the thermal dependence of metabolic rate
+			\begin{linenomath}
+				\begin{equation}
+				k = A e^{-E_a/(kT)}
+				\end{equation}
+			\end{linenomath}
+			where $ k $ is the metabolic rate, $ A $ is the potential reaction rate, $ E_a $ the activation energy, $ k $ the Boltzmann's constant and $ T $ the absolute temperature. Under his model, metabolic rate increases monotonically with temperature. Despite fitting well many data sets that span data between the minimum temperature and the temperature at which maximal metabolic rates are observed ($ T_{opt} $), it does a poor job fitting thermal performance curves (TPCs), which are unimodal shaped because the data spans a temperature range beyond $ T_{opt} $. The Arrhenius model assumes $ E_a $ to be constant with temperature. However, it is known that chemical reactions responsible for metabolic rates are enzyme-catalyzed. Therefore, it has been proposed that the activation or denaturalization of enzymes present in these reactions raise or lower $ E_a $. Allowing the activation energy to explicitly depend on $ T $ through the temperature dependance of the activation/inactivation of enzymes, produces models that capture the unimodal shape of TPCs (\cite{Johnson1946, Schoolfield1981, Ratkowsky2005} and many more).\\
+			Recently, a sudy has shown that enzyme state changes are not always the most adequate mechanism to describe declines in biochemical reaction rates above $ T_{opt} $  \cite{Ritchie2018}. Instead, the rates of the reactions resopnsible for metabolic rates are shown to be limited by three factors, each one of them applying at a different (increasing) temperature ranges. This factors are, sorted increasingly according to the temperature range in which they apply: enzyme catalysis, diffusion and transport, and entropy production. A remarkable implication of these findings is that $ T_{opt} $ may depend on reaction characteristics and enviromental features rather than just enzyme state changes.\\
+			These two mechanisms (enzyme state changes and reaction diffusion thermodynamics) are not mutually exclusive, as they may reduce reaction rate at different temperatures, and the mechanism reducing reaction rate at the lowest temperature may best explain observed data (see Figure \ref{alternative_mechanisms}).\\
+			\begin{figure}\label{alternative_mechanisms}
+				\centering
+				\includegraphics[scale = 0.25]{mechanisms_alternative.pdf}
+				\caption{The mechanism that starts reducing the reaction rate at a lower temperature, will best explain observed data if both mechanisms reduce the rate at the same velocity. If this is not the case, the best model will be a mix of the two at different temperature ranges.}
+			\end{figure}It is possible that processes dominated by highly favorable reactions may be limited by macromolecular state changes, while less favorable synthesis reactions might be driven by reaction-diffussion thermodynamics. Moreover, the governing mechanism of these reactions may be a mix of the two processes as seen in Figure \ref{alternative_mechanisms}.\\
+			I therefore propose to investigate what mechanisms limit  both highly and less favorable biochemical reactions. This research constitutes an effort towards unifying two theories and thus, widen our understanding of temperature response of metabolic rate, thermal ecology and metabolic adaptation. 
+			
+		\section{Methods}
+			I need some advising on how to test for what mechanism is responsible of the observed data, as well as what is the best data to use. I suggest meeting with Dr. Ritchie if possible.
+		\section{Outcomes}
+		\section{Project feasibility}
+	\end{linenumbers}
+	\newpage
+	\bibliographystyle{plain}
+	\bibliography{/Users/pablolechon/library}
+	\end{document}

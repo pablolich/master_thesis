@@ -1,0 +1,117 @@
+\documentclass{article}
+\usepackage{amsmath}
+\DeclareMathOperator{\Tr}{Tr}
+\title{Vectorized formulation of Jacob's model}
+\author{Pablo Lechon}
+
+\begin{document}
+	\maketitle
+	\section{Motivation}
+		A vectorized formulation of Jacob Cook's model is proposed here. Because we will be dealing with a high number of bacteria, an vectorized implementation of the model will contribute to speed up calculations. The original model's formulation reads 
+		
+		\begin{align}
+			\dfrac{dN_s}{dt} &= g_sN_s\left[J_s^{grow}-m_s\right] \label{eq:dNdt}\\
+			\dfrac{dC_{\beta}}{dt} &= \kappa_{\beta} - \gamma_{\beta}C_{\beta} + \sum_{s = 1}^{n} \left(v_{s\beta}^{in} -v_{s\beta}^{out} \right)N_s \label{eq:dCdt}
+		\end{align}
+		
+		Note the replacement of letter $ i $ for $ s $ as dummy index to represent microbial strain. The relevance of this replacement will become apparent in the following section. \\
+		The objects $  J_s^{grow} $, $ v_{s\beta}^{in}  $,  $ v_{s\beta}^{out}  $ have been redefined in a vectorized way by introducing two matrices, $ \boldsymbol{\eta_s} $ and $ \boldsymbol{R_s} $. Here, I explain the reformulation and apply it for a particular example, to ilustrate its vectorized behaviour.\\
+	\section{Definitions}
+		The matrix $ \boldsymbol{\eta_s} $ of dimension $ m \times m $ for the microbial strain $ s $ is introduced to account for the energy asociated to every possible one-step biochemical reaction in strain $ s $ given a set of $ m $ metabolites 
+		\[
+			\boldsymbol{\eta_s}= \begin{bmatrix} 
+				0 & \eta_{12} & \dots &  \eta_{1m} \\
+				\eta_{21} & 0 & \dots & \eta_{2m} \\
+				\vdots &  \vdots & \ddots & \vdots \\
+				\eta_{m1} & \eta_{m2} & \dots & 0
+			\end{bmatrix}
+		\]
+		
+		Here,  $ \eta $ has the same meaning as in the original formulation. Thus, matrix element $ \eta_{ij} $ represents the moles of ATP produced per mole of the reacion $ i \rightarrow j $. Note that the elements in the diagonal $ \eta_{ii} $ are all 0 because reactions of the form $ i \rightarrow i $  represent no reaction at all. \\
+		Next, I introduce the upper triangular $ m \times m $   matrix $ \boldsymbol{R_s} $ that specifies rates of the reactions possesed by strain $ s $
+			\[
+			\boldsymbol{R_s}= \begin{bmatrix} 
+			0 & r_{12} & \dots &  r_{1j} \\
+			0 & 0 & \dots & r_{2j} \\
+			\vdots &  \vdots & \ddots & \vdots \\
+			0 & 0 & \dots & 0
+			\end{bmatrix}
+			\]
+		The matrix elements $ r_{ij} $ have the form
+		\begin{equation}
+		r_{ij} = rq_{ij} 
+		\end{equation}
+		Here, r is 1 or 0, depending on wether or not strain s, poseses reaction $ i \rightarrow j $.  $ q_{ij} $ is the reaction rate, calculated as in the original formulation of the model.\\
+		The upper triangular structure of $ \boldsymbol{R_s} $ represents the constraint that the net reaction needs to be forward, according to the second law of thermodynamics, ie, net reaction 1 $ \rightarrow $ 2 can take place, but the reverse cannot.\\
+	\section{New formulation}
+		From this two definitions, it can be shown that the available growth energy for a microbial strain $ s $ is 
+		\begin{equation}\label{eq:grow}
+			J_s^{grow} = \Tr  (\boldsymbol{R_s}^T\boldsymbol{\eta_s})
+		\end{equation}
+		Furthermore, the rates $ v_{s\beta}^{in} $ and $ v_{s\beta}^{out} $ at which strain $ s $ produces and consumes, respectively, metabolite $ \beta $, take the form
+		\begin{align}
+			v_{s\beta}^{in} & = \sum_{i=1}^m r_{i\beta} \\
+			v_{s\beta}^{out} & = \sum_{j=1}^m r_{\beta j}
+		\end{align}
+		Note that matrix elements $ r_{ij} \in \textbf {R}_s$, although they haven't been labeled as such to avoid overloading the notation.\\
+		Since the model calculates $ v_{s\beta}^{in} $ - $ v_{s\beta}^{out} $, we can express that difference in terms of the reaction rate matrix $ \boldsymbol{R_s} $ in a vectorized way by defining the antisymmetric matrix 
+		\begin{equation}
+			\boldsymbol{M_s} = \boldsymbol{R_s}^T - \boldsymbol{R_s} 
+		\end{equation}
+		Now, the afore mentioned difference of rates of production and consumption for all metabolites can be calculated as 
+		\begin{equation}
+			\vec{v}_{s}^{in} - \vec{v}_{s}^{out}  = \boldsymbol{M_s}\vec{1}
+		\end{equation}
+		where $ \vec{1} $ is a column vector of ones, which function is to sum the elements in all rows of the concentration matrix.\\
+		Overall, these modifications allows to express equations \ref{eq:dNdt}, and \ref{eq:dCdt} in its vectorized form for the $ \beta $  and $ s $ indexes
+		\begin{align}
+			\dfrac{d\vec{N}}{dt} &= \vec{G}-\vec{M}\\
+			\dfrac{d\vec{C}}{dt} &= \vec{\kappa} - \vec{\gamma C}  + \sum_{s = 1}^{n}\boldsymbol{M_s}\vec{N_s}
+		\end{align}
+		where $ G_s = g_sN_sJ_s^{grow} $, $ M_s  = g_sN_sm_s$  and $ \vec{N_s} = N_s\vec{1}$ is a column vector of length $ m $. \\
+		Note that matrices $ \boldsymbol{\eta} $ and $ \boldsymbol{R} $ contain all the biological and thermodynamical constraints of this model, some of which will be attempted to extract in my thesis.
+	\section{Example}
+		Let $  s = \left\{1, 2\right\}  $ microbial strains and $  m = \left\{1,2,3\right\}  $ metabolites present in the medium. \\
+		The available energy for growth for strain 1 is expected to be that gained from every posible reacion, weigthed by the factor $ r_{ij} $ that specifies the rate of the reaction, and if such reaction is possesed by strain 1, thus: $ J_1^{grow} = r_{12}\eta_{12} + r_{13}\eta_{13} + r_{23}\eta_{23} $. \\
+		In fact, if we compute the result of equation \ref{eq:grow}, we obtain the  value we expected.
+	\begin{multline}
+		\begin{split}
+			J_1^{grow} = \Tr\left(\boldsymbol{R_1}^T\boldsymbol{\eta_1}\right) &= \Tr \left(\begin{bmatrix} 
+			0 & 0 &  0 \\
+			r_{12} & 0 & 0 \\
+			r_{13} &  r_{23} & 0 
+			\end{bmatrix} \cdot 
+			\begin{bmatrix} 
+			0 & \eta_{12} & \eta_{13} \\
+			\eta_{21} & 0 & \eta_{23} \\
+			\eta_{31} & \eta_{32} & 0
+			\end{bmatrix}\right) \\
+			&= \Tr \begin{bmatrix} 
+			0 & 0 & 0 \\
+			0 &  r_{12}\eta_{12} & r_{12}\eta_{13} \\
+			r_{23}\eta_{21} & r_{13}\eta_{12} & r_{13}\eta_{13} + r_{23}\eta_{23} 
+			\end{bmatrix} \\ &=  r_{12}\eta_{12} + r_{13}\eta_{13} + r_{23}\eta_{23} 
+		\end{split}
+	\end{multline}
+		In the case of the rates of production and consumption of metabolites we have
+	\begin{equation}
+		\vec{v}_{1}^{in} - \vec{v}_{1}^{out}  = \boldsymbol{M_1}\vec{1} =  \begin{bmatrix}
+		-r_{12} -  r_{13} \\
+		r_{12} - r_{23} \\
+		r_{13} + r_{23}
+		\end{bmatrix}
+	\end{equation}
+		Note that, for metabolite, say, 2, we have
+		\begin{equation}
+		\begin{split}
+		v_{12}^{in} &= r_{12}\\
+		v_{12}^{out} &= r_{23}
+		\end{split}
+		\end{equation}
+	\section{Next steps}
+	\begin{itemize}
+		\item Implement toy model in python
+		\item Explicitly simulate reaction differential equations in each cell.
+		\item Each cell can be one object with a rate of consumption and production depending on its reaction network. Is it a feasible approach? (see methods of proposal for a detailed explanation)
+	\end{itemize}
+\end{document}

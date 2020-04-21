@@ -1,0 +1,49 @@
+\documentclass[titlepage,11pt]{article}
+\usepackage{graphicx} %To include figures
+\graphicspath{{../results/}}
+\usepackage{lineno} % To count lines
+\usepackage{setspace} %To change line spacing
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage[paper=a4paper,margin=2cm]{geometry}
+
+\onehalfspacing
+
+
+\begin{document}
+	
+	\title{\textbf{Unifying different mechanisms that explain $ T_{opt} $ of biochemical reactions. }}
+	\author{Pablo Lechón Alonso \\ [30pt]
+		Imperial College London}
+	\date{Keywords: thermal performacne curve, Reaction-diffusion thermodinamics, enzyme-catalyzed reactions, growth rate}
+	\maketitle
+	\begin{linenumbers}
+		\section{Introduction}
+		Understanding life is the process of tracing the macroscopic patterns we observe down to the fundamental first mechanisms that originate them. Research regarding the role of temperature in metabolic rate embodies a paradigmatic example of this process. Many models based on different theories have been conceived to address this question. Some of them are phenomenological, i.e. \cite{Ratkowsky1982, Lactin1995}, gaussian and polynomial models, but the scientific community has gradually shifted towards proposing only mechanistic models. The first model of this type was obtained by identifying the temperature dependence of chemical reactions rates proposed by Arrhenius \cite{Arrhenius1889} with the thermal dependence of the metabolic rate
+		\begin{linenomath}
+			\begin{equation}
+			k = A e^{-E_a/kT}
+			\end{equation}
+		\end{linenomath}
+		where $ k $ is the metabolic rate, $ A $ is the potential reaction rate, $ E_a $ the activation energy, $ k $ the Boltzmann's constant and $ T $ the absolute temperature. Under his model, metabolic rate increases monotonically with temperature. Despite fitting well many data sets that span data between the minimum temperature and the temperature at which maximal metabolic rates are observed ($ T_{opt} $), it does a poor job fitting thermal performance curves (TPCs), which are unimodally shaped because the data spans a temperature range beyond $ T_{opt} $. The Arrhenius model assumes $ E_a $ to be constant with temperature. However, it is known that chemical reactions responsible for metabolic rates are enzyme-catalyzed. Therefore, it has been proposed that the activation or denaturalization of enzymes present in these reactions raise or lower $ E_a $. Allowing the activation energy to explicitly depend on $ T $ through the temperature dependence of the activation/inactivation of enzymes, produces models that capture the unimodal shape of TPCs (\cite{Johnson1946, Schoolfield1981, Ratkowsky2005, DeLong2017} and many more). \\
+		Recently, a study has shown that enzyme state changes appear inadequate to describe declines in biochemical reaction rates above $ T_{opt} $  when this temperature is well below enzyme deactivation temperatures ($ T_{den} $) \cite{Ritchie2018}. Instead, the rates of the reactions responsible for metabolic rates are shown to be limited by three factors, each one of them applying at a different (increasing) temperature ranges. These factors are, sorted increasingly according to the temperature range in which they apply: enzyme catalysis, diffusion and transport, and entropy production. A remarkable implication of these findings is that $ T_{opt} $ may depend on reaction characteristics and environmental features rather than just enzyme state changes.\\
+		These two mechanisms (enzyme state changes and reaction-diffusion thermodynamics) are not mutually exclusive, as they may reduce reaction rate at different temperatures, and the mechanism reducing reaction rate at the lowest temperature may best explain observed data (see Figure \ref{alternative_mechanisms}).\\
+		\begin{figure}\label{alternative_mechanisms}
+			\centering
+			\includegraphics[scale = 0.25]{mechanisms_alternative.pdf}
+			\caption{The mechanism that starts reducing the reaction rate at a lower temperature, will best explain observed data if both mechanisms reduce the rate at the same velocity. If this is not the case, the best model will be a mix of the two at different temperature ranges.}
+		\end{figure}It is possible that processes dominated by highly favorable reactions may be limited by macromolecular state changes, while less favorable synthesis reactions might be driven by reaction-diffusion thermodynamics. Moreover, the governing mechanism of these reactions may be a mix of the two processes as seen in Figure \ref{alternative_mechanisms}.\\
+		Therefore, I propose to investigate what mechanisms limit both highly and less favorable biochemical reactions. This research constitutes an effort towards unifying two theories and thus, widen our understanding of temperature response of metabolic rate, thermal ecology, and metabolic adaptation. 
+		
+		\section{Methods}
+		Determining what mechanism (reaction-diffusion thermodynamics, or enzyme state changes) rules the thermal performance of living systems is too complex to be addressed all at once. Simplifying the question by restricting it to a specific organism allows for a feasible first approach, which is broadly described next.\\
+		The method consists in five steps, namely: (1) select the most appropriate organism to study, (2) characterize the smallest meaningful reaction network responsible for the growth rate of the organism, (3) apply RDT hypothesis to uncover the reaction network temperature dependence, (4) extrapolate such dependence to the overall growth rate temperature dependence, and (5) compare it with the thermal performance predicted by enzyme state changes to determine what mechanisms explain best the experimental data.\\
+		Lets now analyze the feasibility of each step. The most appropriate organism to study (1) needs to meet two requirements. First, since bacterial growth rate is the closest trait to enzyme kinetics due to fast time scales, bacterial species are more convenient. Second, enough research about the underlying biochemical reactions of the selected organism needs to be available. Following these constraints, \textit{E. coli} is tentatively proposed as a study case. Characterizing the reaction network responsible for the growth rate requires biochemistry knowledge (which will hopefully be acquired from reading and expert advising), and experimental data to draw numerical results to be used in later analysis. If there were no available data of this kind, I propose to simulate it using stochastic simulation of chemical kinetics \cite{Gillespie2007}, or something similar. Step 3 can be accomplished by explicitly adding diffusion to the reaction network description. Extrapolating the previous analysis to the growth rate (4) is not trivial, and many models have been proposed that predict growth rate from underlying biochemical reactions \cite{DeJong2017}. More literature reading around this topic may highlight a way to do this. Finally, the $ T_{opt} $ predictions from the RDT hypothesis will be compared to the ones from enzyme state changes (5). A way to obtain $ T_{opt} $ predictions from the enzyme state changes hypothesis hasn't been determined yet, however, I believe this won't be very hard since much research based on this hypothesis has been done.
+		\section{Outcomes}
+		
+		\section{Project feasibility}
+	\end{linenumbers}
+	\newpage
+	\bibliographystyle{plain}
+	\bibliography{/Users/pablolechon/library}
+\end{document}
