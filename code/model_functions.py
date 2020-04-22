@@ -15,6 +15,7 @@ def r_quotient(S, P):
 
 def K_equilibrium(DeltaG, eta, DeltaGATP, R, T):
     '''Computes equilibrium constant from gibbs energies, R and T'''
+    import ipdb; ipdb.set_trace(context = 20)
     return (np.exp((-DeltaG - eta*DeltaGATP)/(R*T)))
 
 def Theta(Q, Keq):

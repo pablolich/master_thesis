@@ -9,3 +9,9 @@ OC
 Tue Apr 21 13:24:33 CEST 2020
 
 Fix a realistic interval for chemical potentials in order to calculate reasonable Keq!
+
+
+Wed Apr 22 12:23:20 CEST 2020
+
+The smallest the gibbs energy change corresponds to the reaction m_0 --> m_1, because only m_0 is present at the beggining. Sometimes, that energy change is greater than 4 DeltaG ATP, so no reaction is possible. 
+The reaction network stops being generated when the last metabolite is produced. This means that only one arrow will arrive to the last metabolite, and never more. I don't know how realistic is this.

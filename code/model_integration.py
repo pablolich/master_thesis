@@ -27,11 +27,14 @@ def main(argv):
     #Timepoints
     t = np.linspace(1, 10, n)
     #Number of metabolites
-    m = 4
+    m = 9
     #Chemical potentials the interval is 10 because I like it
-    interval = 10
-    mu = np.sort(np.random.uniform(interval, size = m))
-    mu[-1] = interval
+    interval = 3e6 
+    mu_rev = np.sort(np.random.uniform(interval, size = m))
+    mu = mu_rev[::-1]
+    #Fix first and last chemical potentials
+    mu[0] = interval 
+    mu[-1] = 0
     #Number of posible reactions
     n_reac = comb(m, 2, exact = True)
     #Number of strains
@@ -74,7 +77,43 @@ def main(argv):
         #because the concentrations change.
         #2a. Set reaction network
         reactions = np.zeros(shape = (m,m))
+        #Select only reactions that go forward
         tri_ind = np.triu_indices(m, 1)
+        #Initialite reaction network
+        reac_network = np.array([[], []], dtype = 'int32')
+        #List of present metabolite (specified as input argument)
+        list_m_i = [0] 
+        #Initialize reaction sample
+        keep_sampling = True
+        while keep_sampling: 
+            #Sample one reaction
+            #Choose a substrate from list of present substrates
+            m_i = int(np.random.choice(list_m_i))
+            #Choose a product from list of metabolites with a lower chemical
+            #potential, so that the reaction takes place.
+            m_j = int(np.random.choice(np.arange(m_i+1, m)))
+            #Note that doing m_i + 1 avoids having reactions i-->i
+            #Create the tuple representing the reaction
+            r_sample = np.array([[m_i], [m_j]])
+            #Is it an energetically valid reaction?
+            #Check if Gibbs energy change is not too big in order to assure 
+            #that the end metabolite is reached through multiple steps.
+            if mu[r_sample[1]] - mu[r_sample[0]] > -15*DeltaGATP:
+                #Add the reaction to reac_network
+                reac_network = np.concatenate((reac_network, r_sample),axis = 1)
+                #Eliminate repeated reactions
+                reac_network = np.unique(reac_network, axis = 1)
+                #Add product to list of substrates
+                list_m_i.append(m_j)
+                print(reac_network)
+                if m-1 in reac_network[1]:
+                    #When the last metabolite is reached, stop sampling
+                    keep_sampling = False
+
+        reac_network = tuple(reac_network)
+        import ipdb; ipdb.set_trace(context = 20)
+        reactions[reac_network] = 1
+        #Accept them only if their gibbs energy change is smaller than 4G_atp
         reaction_set = np.random.randint(2, size = n_reac)
         reactions[tri_ind] = reaction_set
         #Avoid that all elements are 0 (ie, the microbe has at least one 
@@ -99,14 +138,16 @@ def main(argv):
         #Calculate Gibbs free energy changes
         mu_S = mu[reac_network[0]]
         mu_P = mu[reac_network[1]]
-        DeltaG = mu_P*P - mu_S*S
+        #Gibs energy change is the difference between chemical potentials 
+        #(stechiometric coefficients are all 1)
+        DeltaG = mu_P - mu_S
         #Calculate equilibrium constant
-        import ipdb; ipdb.set_trace(context = 20)
         #Get etas for reaction network
-        eta = Eta[reac_networks]
+        eta = Eta[reac_network]
+        import ipdb; ipdb.set_trace(context = 20)
         Keq = K_equilibrium(DeltaG, eta, DeltaGATP, R, T)
         #Calculate equilibrium constants
-        R = np.matrix([[0, 0.5], [0, 0]])
+        R_ = np.matrix([[0, 0.5], [0, 0]])
 
     return 0
 
