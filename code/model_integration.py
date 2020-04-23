@@ -27,8 +27,8 @@ def main(argv):
     #Timepoints
     t = np.linspace(1, 10, n)
     #Number of metabolites
-    m = 9
-    #Chemical potentials the interval is 10 because I like it
+    m = 100
+    #Chemical potentials 
     interval = 3e6 
     mu_rev = np.sort(np.random.uniform(interval, size = m))
     mu = mu_rev[::-1]
@@ -75,6 +75,7 @@ def main(argv):
         #####################################################
         #Note that rates change after every iteration of the integration
         #because the concentrations change.
+
         #2a. Set reaction network
         reactions = np.zeros(shape = (m,m))
         #Select only reactions that go forward
@@ -98,38 +99,29 @@ def main(argv):
             #Is it an energetically valid reaction?
             #Check if Gibbs energy change is not too big in order to assure 
             #that the end metabolite is reached through multiple steps.
-            if mu[r_sample[1]] - mu[r_sample[0]] > -15*DeltaGATP:
+            if mu[r_sample[1]] - mu[r_sample[0]] > -4*DeltaGATP:
                 #Add the reaction to reac_network
                 reac_network = np.concatenate((reac_network, r_sample),axis = 1)
                 #Eliminate repeated reactions
                 reac_network = np.unique(reac_network, axis = 1)
                 #Add product to list of substrates
                 list_m_i.append(m_j)
-                print(reac_network)
                 if m-1 in reac_network[1]:
                     #When the last metabolite is reached, stop sampling
                     keep_sampling = False
-
+        
+        #Transform to indices in reactions matrix
         reac_network = tuple(reac_network)
-        import ipdb; ipdb.set_trace(context = 20)
+        #Switch on the matrix elements in reactions contained in reac_network
         reactions[reac_network] = 1
-        #Accept them only if their gibbs energy change is smaller than 4G_atp
-        reaction_set = np.random.randint(2, size = n_reac)
-        reactions[tri_ind] = reaction_set
-        #Avoid that all elements are 0 (ie, the microbe has at least one 
-        #reaction)
-        if not np.any(reactions):
-            #Choose one element of the matrix
-            ind = np.random.randint(n_reac)
-            element = (tri_ind[0][ind], tri_ind[1][ind]) 
-            #Assign the value 1 to that matrix element
-            reactions[element] = 1
+        #import matplotlib.pylab as plt
+        #plt.imshow(reactions)
+        #plt.show()
+
         #2b. Calculate rates
-        #Get non-zero element indices (ie, labels of metabolites present in
-        #reaction network)
-        reac_network = np.nonzero(reactions)
         #Get rates of each reaction in the network
-        #Substrate and product  according to C and reac_network concentrations
+        #Substrate and product concentrations from vector C for metabolites
+        #taking part in reac_network 
         S = C[reac_network[0], i-1]
         P = C[reac_network[1], i-1]
         #The following calculations are performed for all reactions at once.
@@ -144,10 +136,18 @@ def main(argv):
         #Calculate equilibrium constant
         #Get etas for reaction network
         eta = Eta[reac_network]
-        import ipdb; ipdb.set_trace(context = 20)
         Keq = K_equilibrium(DeltaG, eta, DeltaGATP, R, T)
-        #Calculate equilibrium constants
-        R_ = np.matrix([[0, 0.5], [0, 0]])
+        #Calculate thetas
+        theta = Theta(Q, Keq)
+        #Calculate rates
+        q_max = np.ones(len(reac_network[0]))
+        ks = 0.1*q_max
+        kr = 10*q_max
+        #Include reaction rates in reaction network matrix
+        q_reac = rate(q_max, theta, ks, kr, S)
+        reactions[reac_network] = q_reac
+        import ipdb; ipdb.set_trace(context = 20)
+
 
     return 0
 

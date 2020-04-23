@@ -15,16 +15,15 @@ def r_quotient(S, P):
 
 def K_equilibrium(DeltaG, eta, DeltaGATP, R, T):
     '''Computes equilibrium constant from gibbs energies, R and T'''
-    import ipdb; ipdb.set_trace(context = 20)
     return (np.exp((-DeltaG - eta*DeltaGATP)/(R*T)))
 
 def Theta(Q, Keq):
     '''Computes theta: how far is my reaction from equilibrium'''
     return (Q/Keq)
 
-def rate(q_max, theta, ks, kr, C):
+def rate(q_max, theta, ks, kr, S):
     '''Computes rate of reaction'''
-    return ((q_max*C*(1-theta))/(ks + C*(1+kr*theta)))
+    return ((q_max*S*(1-theta))/(ks + S*(1+kr*theta)))
 
 def energies(eta, q):
     '''Computes matrix of energies available for each one-step biochemical 
