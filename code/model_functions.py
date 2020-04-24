@@ -32,9 +32,9 @@ def energies(eta, q):
 
 def jgrow(R, Eta):
     '''Calculates the energy available for growth'''
-    return ((R.transpose()*Eta).trace())
+    return (np.matmul(R.transpose(),Eta).trace())
 
-def vin_out(R, Eta, beta):
+def vin_out(R):
     '''Calculates the difference between rates of production and consumption 
     of metabolite beta'''
     return ((R.transpose()-R).sum(axis=1))
@@ -47,19 +47,13 @@ def Maintenance(g, N, m):
     '''Calculates energy required for maintenance'''
     return (g*N*m)
 
-def model(z, t, par):
+def model(z, t, s, m, G, M, kappa, gamma, vin_out):
     '''Implementation of the model'''
 
+    import ipdb; ipdb.set_trace(context = 20)
     #Variables
-    N = z[0]
-    C = z[1]
-
-    #Parameters
-    G = par[0]
-    M = par[2]
-    kappa = par[3]
-    gamma = par[4]
-    vin_out = par[5]
+    N = z[0:s]
+    C = z[s:m+s]
 
     #Model equations
     dNdt = G - M 

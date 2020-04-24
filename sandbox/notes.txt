@@ -15,3 +15,10 @@ Wed Apr 22 12:23:20 CEST 2020
 
 The smallest the gibbs energy change corresponds to the reaction m_0 --> m_1, because only m_0 is present at the beggining. Sometimes, that energy change is greater than 4 DeltaG ATP, so no reaction is possible. 
 The reaction network stops being generated when the last metabolite is produced. This means that only one arrow will arrive to the last metabolite, and never more. I don't know how realistic is this.
+
+
+Fri Apr 24 18:40:09 CEST 2020
+
+I have found out that the reaction networks I am creating are actually very similar between each other. Come up with a different way, so that it is acually more varied.
+Another problem I have found is the Keqs. Sometimes they are too big, and sometimes they are too small. I don't know how to keep them at a normal level, because I choose my reactions according to the 4 Delta G limit, and I still obtain huge amounts!!
+I need to find a way to deal with big Keqs when calculating rates. Sometimes they yield nans, and that isn't cool.
