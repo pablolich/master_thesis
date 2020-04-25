@@ -50,14 +50,15 @@ def Maintenance(g, N, m):
 def model(z, t, s, m, G, M, kappa, gamma, vin_out):
     '''Implementation of the model'''
 
-    import ipdb; ipdb.set_trace(context = 20)
     #Variables
     N = z[0:s]
     C = z[s:m+s]
 
     #Model equations
-    dNdt = G - M 
-    dCdt = kappa - gamma*C + sum(vin_out)*N
-    dzdt = [dNdt, dCdt]
+    dNdt = list(G - M)
+    #Reshape N in order to multiply the flux vectors
+    N_mul = np.repeat(N, m).reshape(s, m)
+    dCdt = list(kappa - gamma*C + sum(vin_out*N_mul))
+    dzdt = dNdt + dCdt
 
     return dzdt 

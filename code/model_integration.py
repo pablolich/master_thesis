@@ -8,6 +8,7 @@ __version__ = '0.0.1'
 
 import sys
 import numpy as np
+import matplotlib.pylab as plt
 from model_functions import *
 from scipy.special import comb
 
@@ -25,7 +26,7 @@ def main(argv):
     #Number of timepoints
     n = 500
     #Timepoints
-    t = np.linspace(1, 10, n)
+    t = np.linspace(1, 20, n)
     #Number of metabolites
     m = 10
     #Chemical potentials 
@@ -130,8 +131,7 @@ def main(argv):
         #because the concentrations change, that is why they need to be 
         #recalculated after each integration step.
 
-        #These 3 lines will be useful to present on monday
-        #import matplotlib.pylab as plt
+        #These 2 lines will be useful to present on monday
         #plt.imshow(reactions)
         #plt.show()
 
@@ -142,6 +142,7 @@ def main(argv):
         #Prealocate elements that will be used later on
         G = np.zeros(s)
         M = np.zeros(s)
+        flux_in_out = np.zeros([s, m])
         for j in range(s):
             S = C[tot_reac_network[j][0], i-1]
             P = C[tot_reac_network[j][1], i-1]
@@ -173,22 +174,32 @@ def main(argv):
             #Calculate growth
             Jgrow = jgrow(reactions[j], Eta[j])
             #Calculate flux in - flux out
-            flux_in_out = vin_out(reactions[j])
+            flux_in_out[j,:] = vin_out(reactions[j])
             #Set growth and maintenance parameters
             g = 1 
             maintenance = 0.2*Jgrow
             G[j] = Grow(g, N[j, i-1], Jgrow)
             M[j] = Maintenance(g, N[j, i-1], maintenance)
-            #Integrate model
-            #Initial conditions for poplation and concentrations
-            import ipdb; ipdb.set_trace(context = 20)
-            z0 = list(N[:, i-1])+list(C[:, i-1])
-            kappa = np.ones(m) 
-            gamma = 0.5
-            z = odeint(model, z0, tspan, args=(s,m,G,M,kappa,gamma,flux_in_out))
-
+            
+        #Integrate model
+        #Initial conditions for poplation and concentrations
+        z0 = list(N[:, i-1])+list(C[:, i-1])
+        kappa = np.ones(m) 
+        gamma = 0.5
+        z = odeint(model, z0, tspan, args=(s,m,G,M,kappa,gamma,flux_in_out))
+        #Store solutions 
+        N[:,i] = z[1][0:s]
+        C[:,i] = z[1][s:s+m]
+        #Next initial condition
+        z0 = z[1]
+    
+    for i in range(len(N)):
+        plt.plot(t, N[i])
+        
+    plt.show()
 
     return 0
+
 
 ## CODE ##
 

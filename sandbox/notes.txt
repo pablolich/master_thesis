@@ -22,3 +22,8 @@ Fri Apr 24 18:40:09 CEST 2020
 I have found out that the reaction networks I am creating are actually very similar between each other. Come up with a different way, so that it is acually more varied.
 Another problem I have found is the Keqs. Sometimes they are too big, and sometimes they are too small. I don't know how to keep them at a normal level, because I choose my reactions according to the 4 Delta G limit, and I still obtain huge amounts!!
 I need to find a way to deal with big Keqs when calculating rates. Sometimes they yield nans, and that isn't cool.
+
+
+Sat Apr 25 19:02:24 CEST 2020
+
+Make sure that concentrations are always positive!
