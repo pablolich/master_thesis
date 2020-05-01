@@ -27,3 +27,8 @@ I need to find a way to deal with big Keqs when calculating rates. Sometimes the
 Sat Apr 25 19:02:24 CEST 2020
 
 Make sure that concentrations are always positive!
+
+
+Sun Apr 26 18:52:17 CEST 2020
+
+For tomorrow, I need to choose products only from the allowed distance, instead of using a while loop: much faster!

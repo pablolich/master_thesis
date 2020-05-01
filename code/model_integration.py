@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pylab as plt
 from model_functions import *
 from scipy.special import comb
+from matplotlib.lines import Line2D
 
 ## CONSTANTS ##
 
@@ -27,22 +28,29 @@ def get_reac_network(s, m,  nATP, mu):
 
     #Prealocate the reaction matrix
     reactions = np.zeros(shape = (s,m,m))
-    #Initialize reaction network container
+    #Initialize reaction sample container 
     reac_network = np.array([[], []], dtype = 'int32')
-    #Prealocate reaction network list where reaction networks for all strains
+    #Prealocate reaction network tensor where reaction networks for all strains
     #will be stored
     tot_reac_network = s*[reac_network]
-    #Create one reaction network for each microbial strain
+    #Create one reaction network for microbial strain i
     for i in range(s):
-        #List of present metabolites from which substrates for reaction network
-        #will be drown
-        list_m_i = [0] 
+        #Maximum number of reactions in the network
+        n_max = comb(m, 2, exact = True)
+        #Actual number of reactions in the network
+        num_reac = np.random.random_integers(low = 1, high = n_max, size = 1)
+        #The number of reactions in the network fixes a subset of metabolites
+        #from which the first substrate is chosen. This is because reactions
+        #can only go in one direction, so for example, if m = 5 and num_reac = 
+        #3, only substrates 1, 2 can be first substrates. 
+        import ipdb; ipdb.set_trace(context = 20)
+        list_first = np.arange(m - num_reac, dtype = int)
+        #Choose the first metabolite to start reactions with
+        list_m_i = [np.random.choice(list_first)] 
         keep_sampling = True
         while keep_sampling: 
             #Sample one reaction from all the posibilities
-            #Choose a substrate from list of present substrates (at the start
-            #only substrate 0 is present, so the network will always start at
-            #0)
+            #Choose a substrate from list of present substrate
             m_i = int(np.random.choice(list_m_i))
             #Create list of possible products of the reaction compatible where
             #Delta G < 0
@@ -68,14 +76,17 @@ def get_reac_network(s, m,  nATP, mu):
                 #lowest chemical potential)
                 if m-1 in reac_network[1]:
                     keep_sampling = False
+
         
         #Transform to indices in reactions matrix
         reac_network = tuple(reac_network)
         #Switch on the matrix elements in reactions contained in reac_network
         tot_reac_network[i] = reac_network
         reactions[i][reac_network] = 1
+        #Reset reaction network for next iteration.
+        reac_network = np.array([[], []], dtype = 'int32')
 
-    return(reactions)
+    return(reactions, tot_reac_network)
 
 def main(argv):
     '''Main function'''
@@ -85,7 +96,7 @@ def main(argv):
     #Timepoints
     t = np.linspace(1, 30, n)
     #Number of metabolites
-    m = 50
+    m = 100
     #Chemical potentials 
     #Total energy contained in metabolitess
     interval = 3e6
@@ -95,7 +106,7 @@ def main(argv):
     #Fix first and last chemical potentials
     mu[0] = interval 
     mu[-1] = 0
-    nATP = 10
+    nATP = 4
     #Number of posible reactions given thermodynamic constraint of only
     #forward net reactions taking place
     n_reac = comb(m, 2, exact = True)
@@ -133,7 +144,10 @@ def main(argv):
 
     #2. Choose reactions matrix for each strain
     ###########################################
-    reactions = get_reac_network(s, m, nATP, mu)
+    reactions, tot_reac_network = get_reac_network(s, m, nATP, mu)
+    #plt.imshow(sum(reactions)/s)
+    #plt.colorbar()
+    #plt.show()
 
     #Numerically integrate the model
     for i in range(1, n):
@@ -216,6 +230,10 @@ def main(argv):
     for i in range(len(C)):
         plt.plot(t, C[i], linestyle = '--')
         
+    custom_lines = [Line2D([0], [0], color = 'black'),
+                    Line2D([0], [0], color = 'black', linestyle = '--')]
+    plt.legend(custom_lines, ['Population', 'Concentration'])
+    plt.xlabel('t')
     plt.show()
 
     return 0
