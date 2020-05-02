@@ -33,27 +33,37 @@ def get_reac_network(s, m,  nATP, mu):
     #Prealocate reaction network tensor where reaction networks for all strains
     #will be stored
     tot_reac_network = s*[reac_network]
-    #Create one reaction network for microbial strain i
+    #Create reaction network for microbial strain i
     for i in range(s):
         #Maximum number of reactions in the network
         n_max = comb(m, 2, exact = True)
         #Actual number of reactions in the network
         num_reac = np.random.random_integers(low = 1, high = n_max, size = 1)
         #The number of reactions in the network fixes a subset of metabolites
-        #from which the first substrate is chosen. This is because reactions
-        #can only go in one direction, so for example, if m = 5 and num_reac = 
-        #3, only substrates 1, 2 can be first substrates. 
-        import ipdb; ipdb.set_trace(context = 20)
-        list_first = np.arange(m - num_reac, dtype = int)
+        #from which the first substrate is chosen. The upper limit of
+        #the set of possible first metabolites is calculated according to the
+        #notes on this matter. 
+        m_up = np.floor(m + 0.5*(1 - np.sqrt(1+8*num_reac)))
+        #Create first metabolite candidates list 
+        list_first = np.arange(m_up, dtype = int)
         #Choose the first metabolite to start reactions with
         list_m_i = [np.random.choice(list_first)] 
         keep_sampling = True
         while keep_sampling: 
             #Sample one reaction from all the posibilities
-            #Choose a substrate from list of present substrate
-            m_i = int(np.random.choice(list_m_i))
-            #Create list of possible products of the reaction compatible where
-            #Delta G < 0
+            #Choose a substrate from list of present substrates
+            m_i = np.random.choice(list_m_i)
+            #Create list of possible products compatible where Delta G < 0 and 
+            #the energetic distance between product and substrate is less than
+            #nATP*DeltaGATP
+            #Vector of energy distances between selected substrate and all
+            #metabolites
+            d_energy = mu - mu[m_i]
+            #Apply first condition, only Delta G < 0 
+            m_1 = np.where(d_energy < 0)
+            #Apply second conditioni distance < nATP*DeltaGATP
+            import ipdb; ipdb.set_trace(context = 20)
+            products = m_1[list(abs(d_energy[m_1]) < nATP*DeltaGATP)]
             products = np.arange(m_i+1, m, dtype = int)
             #Note that we start from m_i to satisfy the latter condition. 
             #doing m_i + 1 avoids having reactions i-->i
