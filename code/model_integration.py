@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__appname__ = '[App_name_here]'
+__appname__ = '[model_integration]'
 __author__ = 'Pablo Lechon (plechon@ucm.es)'
 __version__ = '0.0.1'
 
@@ -20,25 +20,37 @@ global DeltaGATP; DeltaGATP = 75e3 # J/mol
 global T; T = 298 # K 
 
 ## FUNCTIONS ##
+def eliminate_posibilities(substrate, products, network, tot_metabolites):
+    #Get indices of reactions in the network already with that substrate
+    ind = np.where(network[0,:] == substrate)[0]
+    #Get products of those reactions
+    products_ind = network[1,ind]
+    #Get indices of original product vector where those products are
+    remove_ind = np.where(products == products_ind)[0]
+    #Remove those indices
+    products = np.delete(products, remove_ind)
+    if not len(products):
+        import ipdb; ipdb.set_trace(context = 20)
+    return products
+
 
 def get_reac_network(s, m,  nATP, mu):
     '''Create reaction network of feasible reactions (those which associated
     Gibbs energy change is lower than nATP*D(G_ATP)) based on the
     number of metabolites and microbial strains'''
 
+    #Maximum number of reactions in the network
+    n_max = comb(m, 2, exact = True)
     #Prealocate the reaction matrix
     reactions = np.zeros(shape = (s,m,m))
-    #Initialize reaction sample container 
+    #Choose number of reactions in the network
     reac_network = np.array([[], []], dtype = 'int32')
-    #Prealocate reaction network tensor where reaction networks for all strains
-    #will be stored
-    tot_reac_network = s*[reac_network]
+    num_reac = np.random.randint(1, n_max + 1)
+    #Initialize reaction network container 
+    tot_reac_network = np.empty(shape = (2,num_reac), dtype = int)
     #Create reaction network for microbial strain i
     for i in range(s):
-        #Maximum number of reactions in the network
-        n_max = comb(m, 2, exact = True)
-        #Actual number of reactions in the network
-        num_reac = np.random.random_integers(low = 1, high = n_max, size = 1)
+        print(i)
         #The number of reactions in the network fixes a subset of metabolites
         #from which the first substrate is chosen. The upper limit of
         #the set of possible first metabolites is calculated according to the
@@ -48,8 +60,10 @@ def get_reac_network(s, m,  nATP, mu):
         list_first = np.arange(m_up, dtype = int)
         #Choose the first metabolite to start reactions with
         list_m_i = [np.random.choice(list_first)] 
-        keep_sampling = True
-        while keep_sampling: 
+        #Initialize counter
+        n = 0
+        while n < num_reac: 
+            print(n)
             #Sample one reaction from all the posibilities
             #Choose a substrate from list of present substrates
             m_i = np.random.choice(list_m_i)
@@ -60,33 +74,30 @@ def get_reac_network(s, m,  nATP, mu):
             #metabolites
             d_energy = mu - mu[m_i]
             #Apply first condition, only Delta G < 0 
-            m_1 = np.where(d_energy < 0)
-            #Apply second conditioni distance < nATP*DeltaGATP
-            import ipdb; ipdb.set_trace(context = 20)
+            m_1 = np.where(d_energy < 0)[0]
+            #Apply second condition distance < nATP*DeltaGATP
             products = m_1[list(abs(d_energy[m_1]) < nATP*DeltaGATP)]
-            products = np.arange(m_i+1, m, dtype = int)
-            #Note that we start from m_i to satisfy the latter condition. 
-            #doing m_i + 1 avoids having reactions i-->i
-            #Choose a product from list of metabolites
+            #Eliminate products from list of products that would create a 
+            #repeated reaction
+            products = eliminate_posibilities(m_i, products, tot_reac_network, 
+                                              m)
+            print(products)
             m_j = np.random.choice(products)
-            #Create the tuple representing the sampled reaction
-            r_sample = np.array([[m_i], [m_j]])
-            #Is it an energetically valid reaction?
-            #Check if Gibbs energy change is not too big in order to assure 
-            #that the end metabolite is reached through multiple steps.
-            if mu[r_sample[1]] - mu[r_sample[0]] > -nATP*DeltaGATP:
-                #Add the reaction to reac_network
-                reac_network = np.concatenate((reac_network, r_sample),axis = 1)
-                #Eliminate repeated reactions
-                reac_network = np.unique(reac_network, axis = 1)
-                #Add product to list of substrates
+            #Pick one product from list
+            #Add reaction to tot_reac_network
+            tot_reac_network[:,n] = [m_i, m_j]
+            #Check if the added column is repeated by getting indices of unique
+            #columns
+            el, ind = np.unique(tot_reac_network, return_index = True,
+                                axis = 1)
+            #If it isn't repeated, keep going onto the next column
+            if n in ind: n += 1
+            #Otherwise, set it to 0 and sample a reaction again for that column
+            else: tot_reac_network[:,n] = [0, 0]
+            #Add product to list of substrates only if the added product is 
+            #not the last metabolite, because it can't be a substrate
+            if m_j != m-1:
                 list_m_i.append(m_j)
-                #When the last metabolite is reached, stop sampling. The 
-                #reaction network has reached the end product (that with the 
-                #lowest chemical potential)
-                if m-1 in reac_network[1]:
-                    keep_sampling = False
-
         
         #Transform to indices in reactions matrix
         reac_network = tuple(reac_network)
