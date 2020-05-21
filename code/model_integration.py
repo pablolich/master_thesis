@@ -56,11 +56,12 @@ def get_reac_network(s, m,  nATP, mu):
         #the set of possible first metabolites is calculated according to the
         #notes on this matter. 
         m_up = np.floor(m + 0.5*(1 - np.sqrt(1+8*num_reac)))
-        #Create first metabolite candidates list 
+        #Create array of first metabolite candidates
         list_first = np.arange(m_up, dtype = int)
-        #Choose the first metabolite to start reactions with
+        #Choose the first metabolite to start reactions with and include it in
+        #the list of present substrates
         list_m_i = [np.random.choice(list_first)] 
-        #Initialize counter
+        #Initialize counter for number of reactions
         n = 0
         while n < num_reac: 
             print(n)
