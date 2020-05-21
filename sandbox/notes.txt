@@ -27,3 +27,7 @@ I need to find a way to deal with big Keqs when calculating rates. Sometimes the
 Sat Apr 25 19:02:24 CEST 2020
 
 Make sure that concentrations are always positive!
+
+Tue May 19 13:48:56 CEST 2020
+
+Going back to work after exams: what the hell is total reactions?

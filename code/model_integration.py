@@ -21,13 +21,29 @@ global T; T = 298 # K
 ## FUNCTIONS ##
 
 def get_reac_network(s, m,  nATP, mu):
-    '''Create reaction network of feasible reactions (those which associated
+    '''
+    Create reaction network of feasible reactions (those which associated
     Gibbs energy change is lower than nATP*D(G_ATP)) based on the
-    number of metabolites and microbial strains'''
+    number of metabolites and microbial strains
+
+    Parameters:
+        
+        s (int): number of strains
+        m (int): number of metabolites
+        nATP (float): moles of ATP generated per reaction
+        mu (array): vector of chemical potentials for each metabolite
+
+    Returns:
+
+        tot_reac_network (list): reaction network for each strain
+        reactions (array): s matrices of 0 and 1, where 1 represents that
+        reaction i-->j is present in strain s.
+
+    '''
 
     #Prealocate the reaction matrix
-    reactions = np.zeros(shape = (s,m,m))
-    #Initialize reaction network container
+    reactions = np.zeros(shape = (s,m,m), dtype = 'int')
+    #Initialize reaction network container for one strain
     reac_network = np.array([[], []], dtype = 'int32')
     #Prealocate reaction network list where reaction networks for all strains
     #will be stored
@@ -50,7 +66,7 @@ def get_reac_network(s, m,  nATP, mu):
             #Note that we start from m_i to satisfy the latter condition. 
             #doing m_i + 1 avoids having reactions i-->i
             #Choose a product from list of metabolites
-            m_j = np.random.choice(products)
+            m_j = int(np.random.choice(products))
             #Create the tuple representing the sampled reaction
             r_sample = np.array([[m_i], [m_j]])
             #Is it an energetically valid reaction?
@@ -75,32 +91,33 @@ def get_reac_network(s, m,  nATP, mu):
         tot_reac_network[i] = reac_network
         reactions[i][reac_network] = 1
 
-    return(reactions)
+    return(reactions, tot_reac_network)
 
 def main(argv):
     '''Main function'''
 
     #Number of timepoints
-    n = 100
+    n = 1000
     #Timepoints
-    t = np.linspace(1, 30, n)
+    t = np.linspace(1, 80, n)
     #Number of metabolites
-    m = 50
+    m = 3
     #Chemical potentials 
     #Total energy contained in metabolitess
-    interval = 3e6
+    interval = 3e5
+    #Pack total energy into m intervals (chemical potentials of metabolites)
+    pack = np.random.uniform(interval, size = m)
     #Sort decreasingly 
-    mu_rev = np.sort(np.random.uniform(interval, size = m))
-    mu = mu_rev[::-1]
+    mu = np.sort(pack)[::-1]
     #Fix first and last chemical potentials
     mu[0] = interval 
     mu[-1] = 0
     nATP = 10
-    #Number of posible reactions given thermodynamic constraint of only
-    #forward net reactions taking place
+    #Total number of posible reactions if only forward net reactions taking 
+    #place
     n_reac = comb(m, 2, exact = True)
     #Number of strains
-    s = 10
+    s = 2
     #Initial conditions
     #All metabolite concentrations equal 0, and all strains have 1 individual
     Cinit = [0]*m
@@ -133,7 +150,9 @@ def main(argv):
 
     #2. Choose reactions matrix for each strain
     ###########################################
-    reactions = get_reac_network(s, m, nATP, mu)
+    reactions, tot_reac_network = get_reac_network(s, m, nATP, mu)
+    #Initialize reaction rates matrix
+    reaction_rates = np.zeros(shape = (s,m,m))
 
     #Numerically integrate the model
     for i in range(1, n):
@@ -146,9 +165,6 @@ def main(argv):
         #because the concentrations change, that is why they need to be 
         #recalculated after each integration step.
 
-        #These 2 lines will be useful to present on monday
-        #plt.imshow(reactions)
-        #plt.show()
 
         #2b. Calculate rates
         #Get rates of each reaction in the network
@@ -185,21 +201,21 @@ def main(argv):
             #Turn nans to 0
             nans = np.isnan(q_reac)
             q_reac[nans] = 0
-            reactions[j][tot_reac_network[j]] = q_reac
+            reaction_rates[j][tot_reac_network[j]] = q_reac
             #Calculate growth
-            Jgrow = jgrow(reactions[j], Eta[j])
+            Jgrow = jgrow(reaction_rates[j], Eta[j])
             #Calculate flux in - flux out
-            flux_in_out[j,:] = vin_out(reactions[j])
+            flux_in_out[j,:] = vin_out(reaction_rates[j])
             #Set growth and maintenance parameters
             g = 1 
-            maintenance = 0.2*Jgrow
+            maintenance = 0.2
             G[j] = Grow(g, N[j, i-1], Jgrow)
             M[j] = Maintenance(g, N[j, i-1], maintenance)
             
         #Integrate model
         #Initial conditions for poplation and concentrations
         z0 = list(N[:, i-1])+list(C[:, i-1])
-        kappa = np.ones(m) 
+        kappa = 0.05*np.ones(m) 
         gamma = 0.5
         z = odeint(model, z0, tspan, args=(s,m,G,M,kappa,gamma,flux_in_out))
         #Store solutions 
@@ -210,12 +226,19 @@ def main(argv):
         #Next initial condition
         z0 = z[1]
     
+    #These 2 lines will be useful to present on monday
+    for i in range(s):
+        plt.figure()
+        plt.imshow(reactions[i])
+
+    plt.figure()
     for i in range(len(N)):
-        plt.plot(t, N[i])
+        plt.plot(t, N[i], label= 'Strain'+str(i))
 
     for i in range(len(C)):
-        plt.plot(t, C[i], linestyle = '--')
+        plt.plot(t, C[i], linestyle = '--', label = 'Metabolite'+str(i))
         
+    plt.legend()
     plt.show()
 
     return 0
