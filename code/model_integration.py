@@ -9,6 +9,7 @@ __version__ = '0.0.1'
 import sys
 import numpy as np
 import matplotlib.pylab as plt
+from matplotlib import gridspec
 from model_functions import *
 from scipy.special import comb
 
@@ -19,12 +20,12 @@ global DeltaGATP; DeltaGATP = 75e3 # J/mol
 global T; T = 298 # K 
 
 ## FUNCTIONS ##
+def generate_network(s, m, nATP, mu):
 
-def get_reac_network(s, m,  nATP, mu):
     '''
     Create reaction network of feasible reactions (those which associated
     Gibbs energy change is lower than nATP*D(G_ATP)) based on the
-    number of metabolites and microbial strains
+    number of metabolites,  microbial strains and chemical potentials
 
     Parameters:
         
@@ -41,60 +42,56 @@ def get_reac_network(s, m,  nATP, mu):
 
     '''
 
-    #Prealocate the reaction matrix
-    reactions = np.zeros(shape = (s,m,m), dtype = 'int')
-    #Initialize reaction network container for one strain
-    reac_network = np.array([[], []], dtype = 'int32')
-    #Prealocate reaction network list where reaction networks for all strains
-    #will be stored
-    tot_reac_network = s*[reac_network]
-    #Create one reaction network for each microbial strain
-    for i in range(s):
-        #List of present metabolites from which substrates for reaction network
-        #will be drown
-        list_m_i = [0] 
-        keep_sampling = True
-        while keep_sampling: 
-            #Sample one reaction from all the posibilities
-            #Choose a substrate from list of present substrates (at the start
-            #only substrate 0 is present, so the network will always start at
-            #0)
-            m_i = int(np.random.choice(list_m_i))
-            #Create list of possible products of the reaction compatible where
-            #Delta G < 0
-            products = np.arange(m_i+1, m, dtype = int)
-            #Note that we start from m_i to satisfy the latter condition. 
-            #doing m_i + 1 avoids having reactions i-->i
-            #Choose a product from list of metabolites
-            m_j = int(np.random.choice(products))
-            #Create the tuple representing the sampled reaction
-            r_sample = np.array([[m_i], [m_j]])
-            #Is it an energetically valid reaction?
-            #Check if Gibbs energy change is not too big in order to assure 
-            #that the end metabolite is reached through multiple steps.
-            if mu[r_sample[1]] - mu[r_sample[0]] > -nATP*DeltaGATP:
-                #Add the reaction to reac_network
-                reac_network = np.concatenate((reac_network, r_sample),axis = 1)
-                #Eliminate repeated reactions
-                reac_network = np.unique(reac_network, axis = 1)
-                #Add product to list of substrates
-                list_m_i.append(m_j)
-                #When the last metabolite is reached, stop sampling. The 
-                #reaction network has reached the end product (that with the 
-                #lowest chemical potential)
-                if m-1 in reac_network[1]:
-                    keep_sampling = False
-        
-        #Transform to indices in reactions matrix
-        reac_network = tuple(reac_network)
-        #Switch on the matrix elements in reactions contained in reac_network
-        tot_reac_network[i] = reac_network
-        reactions[i][reac_network] = 1
+    #Initialize output
+    reac_network = np.array([[], []], dtype = 'int')
+    #list of present substrates (at the start only substrate 0 is present, so 
+    #the network will always start at 0)
+    list_m_i = [0] 
+    keep_sampling = True
+    while keep_sampling: 
+        #Choose a substrate from list of present substrates (at the start
+        #only substrate 0 is present, so the network will always start at
+        #0)
+        m_i = int(np.random.choice(list_m_i))
+        #Create list of possible products of the reaction compatible where
+        #Delta G < 0
+        products = np.arange(m_i+1, m, dtype = int)
+        #Note that we start from m_i to satisfy the latter condition. 
+        #doing m_i + 1 avoids having reactions i-->i
+        #Choose a product from list of metabolites
+        m_j = int(np.random.choice(products))
+        #Create the tuple representing the sampled reaction
+        r_sample = np.array([[m_i], [m_j]])
+        #Is it an energetically valid reaction?
+        #Check if Gibbs energy change is not too big in order to assure 
+        #that the end metabolite is reached through multiple steps.
+        if mu[r_sample[1]] - mu[r_sample[0]] > -nATP*DeltaGATP:
+            #Add the reaction to reac_network
+            reac_network = np.concatenate((reac_network, r_sample),axis = 1)
+            #Eliminate repeated reactions
+            reac_network = np.unique(reac_network, axis = 1)
+            #Add product to list of substrates
+            list_m_i.append(m_j)
+            #When the last metabolite is reached, stop sampling. The 
+            #reaction network has reached the end product (that with the 
+            #lowest chemical potential)
+            if m-1 in reac_network[1]:
+                keep_sampling = False
+    reac_network= tuple(reac_network)
+    
+    return reac_network
 
-    return(reactions, tot_reac_network)
 
 def main(argv):
     '''Main function'''
+
+
+    ################
+    #SET PARAMETERS#
+    ################
+
+    #1. Initial conditions
+    ######################
 
     #Number of timepoints
     n = 1000
@@ -104,7 +101,7 @@ def main(argv):
     m = 3
     #Chemical potentials 
     #Total energy contained in metabolitess
-    interval = 3e5
+    interval = 1e5
     #Pack total energy into m intervals (chemical potentials of metabolites)
     pack = np.random.uniform(interval, size = m)
     #Sort decreasingly 
@@ -128,14 +125,10 @@ def main(argv):
     #Add initial conditions to the first column of the solution's time series
     C[:,0] = Cinit
     N[:,0] = Ninit
-    
-    
-    ################
-    #SET PARAMETERS#
-    ################
 
-    #1. Choose Eta matrix
+    #2. Choose Eta matrix
     #####################
+
     #For now we set all of them to 0.5
     Eta = np.ones(shape = (s,m,m))
     #Get indices of upper triangular elements with an offset of 1 to exclude
@@ -148,75 +141,100 @@ def main(argv):
     for i in range(s):
         Eta[i][tri_ind] = eta_set
 
-    #2. Choose reactions matrix for each strain
+    #3. Choose reactions matrix for all strains
     ###########################################
-    reactions, tot_reac_network = get_reac_network(s, m, nATP, mu)
+    
+    #Prealocate the reaction tensor
+    reactions = np.zeros(shape = (s,m,m), dtype = 'int')
+    #Initialize reaction network container for one strain
+    reac_network = np.array([[], []], dtype = 'int32')
+    #Prealocate reaction network list where reaction networks for all strains
+    #will be stored
+    tot_reac_network = s*[reac_network]
+    #Create one reaction network for each microbial strain
+    for i in range(s):
+        import ipdb; ipdb.set_trace(context = 20)
+        reac_network = generate_network(s, m, nATP, mu)
+        tot_reac_network[i] = reac_network
+        reactions[i][reac_network] = 1
+
     #Initialize reaction rates matrix
     reaction_rates = np.zeros(shape = (s,m,m))
 
-    #Numerically integrate the model
+    #Set parameter values that depend on each strain
+    q_max = np.ones(len(tot_reac_network[j][0]))
+    ks = 0.1*q_max
+    kr = 10*q_max
+    #Set growth and maintenance parameters
+    g = 1 
+    maintenance = 0.2
+    #Set injection and dilution rate of metabolites
+    kappa = 0.05*np.ones(m) 
+    gamma = 0.5
+
+    ###################
+    #MODEL INTEGRATION#
+    ###################
+
+    #Loop through time
     for i in range(1, n):
         #Declare timespan for this iteration of numerical integration
         tspan = [t[i-1], t[i]]
 
-        #2. Rates are calculated according to enzyme kinetics
-        #####################################################
+        #1. Calculate  rates and asociated quatnitiesfor time step i
+        ############################################################
+
         #Note that rates change after every iteration of the integration
         #because the concentrations change, that is why they need to be 
         #recalculated after each integration step.
 
-
-        #2b. Calculate rates
-        #Get rates of each reaction in the network
-        #Get concentrations metabolites from vector C taking part in reaction 
-        #networks as substrate or products
         #Prealocate elements that will be used later on
         G = np.zeros(s)
         M = np.zeros(s)
         flux_in_out = np.zeros([s, m])
+        #Loop through all strains
         for j in range(s):
+            #Get concentrations from those metabolites taking part in reaction 
+            #network 
             S = C[tot_reac_network[j][0], i-1]
             P = C[tot_reac_network[j][1], i-1]
+            #Get chemical potentials of those metabolites
+            mu_S = mu[tot_reac_network[j][0]]
+            mu_P = mu[tot_reac_network[j][1]]
+            #Calculate quantities necesary for the integration
             #The following calculations are performed for all reactions at once.
             #Calculate reaction quotients
             Q = r_quotient(S, P)
-            #Calculate Gibbs free energy changes
-            mu_S = mu[tot_reac_network[j][0]]
-            mu_P = mu[tot_reac_network[j][1]]
-            #Gibs energy change is the difference between chemical potentials 
-            #(stechiometric coefficients are all 1)
+            #Gibs free energy change is the difference between chemical 
+            #potentials (stechiometric coefficients are all 1)
             DeltaG = mu_P - mu_S
-            #Calculate equilibrium constant
             #Get etas for reaction network
             eta = Eta[j][tot_reac_network[j]]
+            #Calculate equilibrium constant
             Keq = K_equilibrium(DeltaG, eta, DeltaGATP, R, T)
             #Calculate thetas
             theta = Theta(Q, Keq)
             #Calculate rates
-            q_max = np.ones(len(tot_reac_network[j][0]))
-            ks = 0.1*q_max
-            kr = 10*q_max
-            #Include reaction rates in reaction network matrix
             q_reac = rate(q_max, theta, ks, kr, S)
             #Turn nans to 0
             nans = np.isnan(q_reac)
             q_reac[nans] = 0
+            #Include reaction rates in reaction network matrix
             reaction_rates[j][tot_reac_network[j]] = q_reac
             #Calculate growth
             Jgrow = jgrow(reaction_rates[j], Eta[j])
             #Calculate flux in - flux out
             flux_in_out[j,:] = vin_out(reaction_rates[j])
-            #Set growth and maintenance parameters
-            g = 1 
-            maintenance = 0.2
+            #Calculate Growth and Maintenance vectors
             G[j] = Grow(g, N[j, i-1], Jgrow)
             M[j] = Maintenance(g, N[j, i-1], maintenance)
             
-        #Integrate model
+        #2. Integrate model
+        ###################
+
         #Initial conditions for poplation and concentrations
         z0 = list(N[:, i-1])+list(C[:, i-1])
-        kappa = 0.05*np.ones(m) 
-        gamma = 0.5
+        #Integration
         z = odeint(model, z0, tspan, args=(s,m,G,M,kappa,gamma,flux_in_out))
         #Store solutions 
         N[:,i] = z[1][0:s]
@@ -226,12 +244,19 @@ def main(argv):
         #Next initial condition
         z0 = z[1]
     
+    #Some plotting for meeting
+    ##########################
+    
+    #Create panel layout
+    G = gridspec.GridSpec(2,3)
+    
+    plt.figure(figsize = (7,3.5))
     #These 2 lines will be useful to present on monday
     for i in range(s):
-        plt.figure()
+        axes = plt.subplot(G[i,0])
         plt.imshow(reactions[i])
 
-    plt.figure()
+    axes2 = plt.subplot(G[:,1:])
     for i in range(len(N)):
         plt.plot(t, N[i], label= 'Strain'+str(i))
 
@@ -239,7 +264,7 @@ def main(argv):
         plt.plot(t, C[i], linestyle = '--', label = 'Metabolite'+str(i))
         
     plt.legend()
-    plt.show()
+    plt.savefig('../results/reac_dynamics_'+option+'.pdf', bbox_inches='tight')
 
     return 0
 
