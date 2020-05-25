@@ -37,3 +37,8 @@ May 22,2020
 Maybe qualitatively different reaction networks give different dynamics. Is it worth studying the effect of reaction network type in the ecosystem dynamics
 What is the deal with the eta matrix? how do you choose it?
 I transform negative elements to 0, I hope that is okay if the timestep is small enough right?
+
+May 25,2020
+
+Maybe I am able to vectorize the loop trhough all strains... 
+How do I choose the number of reactions happening?
