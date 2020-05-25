@@ -1,0 +1,33 @@
+
+    #Choose manually:
+    #1. n_r = 3
+    #option = '1_inp'
+    #reactions = np.array([[[0,1,1], [0,0,1], [0,0,0]],
+    #                      [[0,1,1], [0,0,1], [0,0,0]]])
+    #tot_reac_network = [tuple([np.array([0,0,1]),np.array([1,2,2])]), 
+    #                    tuple([np.array([0,0,1]),np.array([1,2,2])])]
+    #option = '2'
+    #reactions = np.array([[[0,1,1], [0,0,1], [0,0,0]],
+    #                      [[0,1,1], [0,0,0], [0,0,0]]])
+    #tot_reac_network = [tuple([np.array([0,0,1]),np.array([1,2,2])]), 
+    #                    tuple([np.array([0,0]),np.array([1,2])])]
+    #option = '3'
+    #reactions = np.array([[[0,1,1], [0,0,0], [0,0,0]],
+    #                      [[0,1,1], [0,0,0], [0,0,0]]])
+    #tot_reac_network = [tuple([np.array([0,0]),np.array([1,2])]), 
+    #                    tuple([np.array([0,0]),np.array([1,2])])]
+    #option = '4'
+    #reactions = np.array([[[0,1,0], [0,0,1], [0,0,0]],
+    #                      [[0,1,0], [0,0,1], [0,0,0]]])
+    #tot_reac_network = [tuple([np.array([0,1]),np.array([1,2])]), 
+    #                    tuple([np.array([0,1]),np.array([1,2])])]
+    #option = '5'
+    #reactions = np.array([[[0,1,1], [0,0,0], [0,0,0]],
+    #                      [[0,1,0], [0,0,0], [0,0,0]]])
+    #tot_reac_network = [tuple([np.array([0,0]),np.array([1,2])]), 
+    #                    tuple([np.array([0]),np.array([1])])]
+    #option = '6'
+    #reactions = np.array([[[0,1,0], [0,0,0], [0,0,0]],
+    #                      [[0,0,0], [0,0,1], [0,0,0]]])
+    #tot_reac_network = [tuple([np.array([0]),np.array([1])]), 
+    #                    tuple([np.array([0]),np.array([2])])]

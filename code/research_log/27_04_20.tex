@@ -1,0 +1,82 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage[right=20mm,left=20mm,top=20mm,bottom=20mm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[utf8x]{inputenc}
+\usepackage{graphicx}
+\graphicspath{{../../results/}}
+\usepackage{subcaption}
+
+\begin{document}
+	
+    \LARGE{\textbf{Research log summary}}\hfill\Large{Apr 27,2020}
+    \section*{Progress}
+	\begin{itemize}
+	    \item Implemented first version of numerical integration of the model with the following parameters:\\
+	    \begin{center}
+	    	\begin{tabular}{ |l|c|c| } 
+	    		\hline
+	    		 Description & Symbol & Value \\
+	    		\hline
+	    		Number of metabolites & m & 100 \\ 
+	    		Number of strains & s & 10 \\ 
+	    		ATP Gibbs energy & $ \Delta G_{ATP} $ &$ 7.5\cdot 10^{4} $\\ 
+	    		Most energetic metabolite & $ \mu_0 $ & $ 3\cdot 10^{4} $ \\ 
+	    		max$\left(\dfrac{\Delta G^{0}_{S\rightarrow P}}{\Delta G_{ATP}}\right)$ & nATP & 4 \\ 
+	    		Moles of ATP energy per reaction & $ \eta $ & 0.5  \\ 
+	    		Maximum reaction rate & $ q_{max} $ & 1 \\ 
+	    		Saturation constant & $ K_s $ & 0.1 \\ 
+	    		Reversibility constant & $ k_r $ & 10 \\ 
+	    		Growth factor & g & 1 \\ 
+	    		Maintenance factor & m  &  0.2$\cdot J_{grow}$ \\ 
+	    		Externally supplied resource & $ \kappa $  &  1 \\ 
+	    		Dilution rate & $ \gamma $ &  0.5 \\ 
+	    		Populations initial conditions & $ N_{0}$ &  (1, 1, ..., 1)\\ 
+	    		Concentrations initial condition & $ C_{0}$ &  (0, 0, ..., 0)\\
+	    		\hline
+	    	\end{tabular}
+	    \end{center}
+    
+    	The simulation with this parameters yields the time-series population and metabolite concentration dynamics seen in figure \ref{fig:dynamics}.
+    	\begin{figure}[h]
+    		\centering
+    		\includegraphics[width=0.7\linewidth]{dynamics_example.pdf}
+    		\caption{Time series of population and concentration dynamics}
+    		\label{fig:dynamics}
+    	\end{figure}
+    	If I run my simulation with the most energetic metabolite being $ \mu_0 =  3\cdot 10^{6}$, which is biologically more realistic, I my populations and concentrations diverge. I am currently investigating why
+    	\item Checked reaction networks  for different values of nATP. Results shown in figure \ref{fig:network}
+    	\begin{figure}
+    		\centering
+    		\includegraphics[width=\linewidth]{reac_matrix_tot.pdf}
+    		\caption{Mean of eaction network matrix facross strains for $ n_{ATP} = 4 $ (top) , $ n_{ATP} = 16 $ (left), $ n_{ATP} = 32 $ (right). Note that the closer the elements to the diagonal, the lower the gibbs energy change per reaction is. }
+    		\label{fig:network}
+    	\end{figure}
+	\end{itemize}
+    \section*{Questions}
+	\begin{itemize}
+	    \item What are the details of the generation of a set of random chemical potentials?
+		My random chemical potentials, generate Keq that vary from 10$^{-7}$ up to 10$^{45}$. These are not biologically realistic values of equilibrium constants. I think the problem is that my chemical potential intervals vary a lot, leading to very high or very low $\Delta G^{0}_{S\rightarrow P}$ and therefore affecting $K_{eq}$ through\\
+		\begin{equation}
+			K_{eq}(S, P) = \exp\left(\frac{-\Delta G^{0}_{S\rightarrow P} - \eta\Delta G_{ATP}}{RT}\right)
+		\end{equation}
+		\item I am finishing reaction networks when the last metabolite is reached, and I don't know if this is a realistic constraint.
+	\end{itemize}
+
+	
+
+		\begin{figure}[h]
+		    \centering
+		    \includegraphics[width = \textwidth]{question.pdf}
+		    \caption{Histograms of $ \Delta G^{0}_{S\rightarrow P} $ and $ \ln(K_{eq}) $. Note that $ \Delta G^{0}_{S\rightarrow P} $ is bounded between 0 an $  4\Delta G_{ATP} $, and still high $ K_{eq} $ are obtained. }
+		\end{figure}
+	
+	\section*{Next steps}
+		\begin{itemize}
+			\item Investigate why my dynamics are diverging.
+			\item Understand Jacob's way of generating reaction networks and $ \eta $ and $ K_{eq} $ bounds
+			\item 	Change the way I generate reaction networks to make it quicker.
+		\end{itemize}
+	
+		
+		
+\end{document}

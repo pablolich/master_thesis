@@ -1,0 +1,50 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[top = 3cm, bottom = 3cm, left = 3cm, right = 3cm]{geometry}
+\graphicspath{{../data/}}
+\DeclareMathOperator{\Tr}{Tr}
+\title{Thesis progress and notes}
+\author{Pablo Lechon}
+
+\begin{document}
+	\maketitle
+	\newpage\
+	\section{Upper limit determinationof the  first metabolite set.}
+	Since the reaction network can only go forward, there must be a first metabolite, from which the reactions proceed. In the current reaction network generator, we randomly set how many reactions that take place, $ n_r $. Thus, given the number of reactions, the first metabolite can only be chosen from a subset $ \{1,m_{up}\} $ of the avaliable metabolites $ m $,  which upper limit, $ m_{up} $ is given by 
+	\begin{equation}
+		\label{eq:upper_limit}
+		m_{up} = m + 1 - m_r
+	\end{equation}
+	Where $ m_r $ is the minimum number of metabolites required to achieve $ n_r $ reactions, and its given by solving
+	\begin{equation}
+		{m_{r} \choose 2} = n_r
+		\label{eq:minimum}
+	\end{equation}
+	Plugging solution of equation \ref{eq:minimum} into equation \ref{eq:upper_limit} one obtains the final result
+	\begin{equation}
+		m_{up} = m + \frac 1 2 \left(1 - \sqrt{1 + 8n_r}\right)
+		\label{eq:upperresult}
+	\end{equation}
+	To exemplify this result, consider a system with $ m = 5 $ metabolites and  $ n_r =  6 $ reactions, the upper limit for the subset of metabolites from which the first metabolite can be picked is $ m_{up} = 2 $, according to expression \ref{eq:upperresult}. This limit is ilustrated in figure \ref{fig:example_upper}. Note that expression \ref{eq:upperresult} can result into a non-integer, in which case the closest lower integer would be taken as the upper limit. 
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=0.6\linewidth]{upper_limit.pdf}
+		\caption{Graphical representation of the concept of upper limit for first metabolite. As calculated above, given 6 reactions, the first metabolite can only be 1 or 2, but not a higher one, because then there would not be enough metabolites to complete 6 reactions.}
+		\label{fig:example_upper}
+	\end{figure}
+	\section{Ensuring multiple steps in reaction networks}
+	There are two ways. First, limiting the amount $ \Delta G_{i\rightarrow j} $, so that you have a cascade of reactions going from the most energetic metabolite to the least energetic metabolite. Second, to set the number of reactions that happen. The latter method would not avoid having reactions with a very big $ \Delta G $, so to include more reactions even when the least energetic metabolite has been reached, one would repeat metabolites, and products. The problem with this is that when we have a low number of reactions, and we are limiting....\\
+	Maybe the limiting factor of the number of reactions is the acquired energy! A reaction network is generated until the photosinthesis energy is achieved, or some close number... \\
+	An upper limit to the energy obtained from a reaction is imposed because microbes  can't break-up substrate A into product B, if these reactants have very different chemical potentials. \\
+	\textbf{What happens when metabolite 2 is substrate of 2 reactions, but only product of 1? Maybe the input of metabolites and product of reactions is not enough supply for the consumption of that metabolite. If it is, how does the microbe divides what concentration goes to whom?}
+	\subsection{Possible fix}
+	The problem I ran into right now is that the limit on energy distance between metabolites reduces the number of posible reaction to $ n_r < {m \choose 2} $. The solution to this would be to create all the reaction pairs before hand, and then draw a random number with a uniform probability between 1 and $ n_r $. After this, I would draw from that set of reactions, $ n_r  $ times to create my network.\\
+	\textbf{How would this procedure affect $ m_{up} $?}
+	Another problem arises with choosing the first metabolite from such a wide interval (i.e., [1, $ m_{up} $]), and it its that only if the first chosen metabolite is equal or lower than the supplied metabolite, the microbe will live. If the supplied metabolite is energetically lower than the first metabolite in the reaction network, that microbe will never live, unless the first metabolite of its network is provided as a product from other microbes.\\ 
+	\textbf{Does the rich/low nutritive regime of the environment determine the behaviour of the population dynamics?}\\
+	\section{Mean Field approximation}
+	\textbf{Does the mean field approximation imposes any kind of energy limitation?}
+	\section{Unimportant questions}
+	Should I fix the first and last chemical potentials to 0 and 3e6?
+\end{document}
