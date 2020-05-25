@@ -4,20 +4,69 @@ __appname__ = '[implementation]'
 __author__ = 'Pablo Lechon (pl1619@ic.ac.uk)'
 __version__ = '0.0.1'
 
+## CONSTANTS ##
+
+global R; R = 8.314462618 # J/(K mol)
+global DeltaGATP; DeltaGATP = 75e3 # J/mol
+global T; T = 298 # K 
+
 ## IMPORTS ##
 
 import numpy as np
 import matplotlib.pylab as plt
-from model_functions import *
+from functions import *
+import scipy.stats as stats
 
 ## FUNCTIONS ##
+def trunc_norm(mu, sigma, lower, upper):
+    '''Sample integer from a truncated normal distribution'''
+
+    n = stats.truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, 
+                        scale=sigma)
+    sample = int(n.rvs(1))
+    
+    return round(sample)
+
+def kth_diag_indices(a, k):
+    '''Returns indices of the kth diagonal of matrix a'''
+    rows, cols = np.diag_indices_from(a)
+    return rows[:-k], cols[k:]
+
+def choose_reaction(m):
+    '''
+    Chooses one reaction with a probability p that decreases the further 
+    away we are from the main diagonal
+    '''
+    #Probabilities follow a truncated normal distribution N(1, sqrt(m))
+    sigma = np.sqrt(m/3)
+    k = round(abs(np.random.normal(1, sigma)))
+    #Avoid k being in the main diagonal
+    while k < 1:
+        k = round(abs(np.random.normal(1, sigma)))
+    #Get indices of that diagonal
+    ind = kth_diag_indices(np.ones(shape = (m,m)), k)
+    #Choose uniformly at random one of the elements in this diagonal
+    try: 
+        el = np.random.randint(m-k)
+        #Substrate
+        sub = ind[0][el]
+        #Product
+        prod = ind[1][el]
+    except: 
+        sub = 0
+        prod = m-1
+    #Create reaction
+    reaction = np.array([[sub], [prod]])
+
+    return reaction
+
 
 def generate_network(s, m, nATP, mu, num_reac):
 
     '''
     Create reaction network of feasible reactions (those which associated
     Gibbs energy change is lower than nATP*D(G_ATP)) based on the
-    number of metabolites,  microbial strains and chemical potentials
+    number of metabolites,  microbial strains and chemical potentials.
 
     Parameters:
         
@@ -57,6 +106,7 @@ def generate_network(s, m, nATP, mu, num_reac):
         #Choose a product from list of metabolites
         m_j = int(np.random.choice(products))
         #Create the tuple representing the sampled reaction
+        #r_sample = choose_reaction(m)
         r_sample = np.array([[m_i], [m_j]])
         #Is it an energetically valid reaction?
         #Check if Gibbs energy change is not too big in order to assure 
@@ -76,6 +126,7 @@ def generate_network(s, m, nATP, mu, num_reac):
     reac_network= tuple(reac_network)
     
     return reac_network
+
 
 def model_integration(t, s, m, tot_reac_network, mu, Eta, q_max, ks, kr, 
                       reaction_rates, g, N, C, maintenance, kappa, gamma):
