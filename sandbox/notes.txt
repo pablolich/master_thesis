@@ -42,3 +42,14 @@ May 25,2020
 
 Maybe I am able to vectorize the loop trhough all strains... 
 How do I choose the number of reactions happening?
+
+May 26,2020
+
+Change supply and dilution rates accordingly so that substrate concentrations don't diverge?
+I can store the intake - output that a certain community has and plot it against the final richness
+I can also store the rate at which the population decreases for each strain (asymptotically)
+Group selection??
+Introduce a new population in the remanents of an old one; population ingeneering...j
+How does the number of reactions affect the performance?
+Analytical work with this model?
+

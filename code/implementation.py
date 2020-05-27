@@ -18,14 +18,6 @@ from functions import *
 import scipy.stats as stats
 
 ## FUNCTIONS ##
-def trunc_norm(mu, sigma, lower, upper):
-    '''Sample integer from a truncated normal distribution'''
-
-    n = stats.truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, 
-                        scale=sigma)
-    sample = int(n.rvs(1))
-    
-    return round(sample)
 
 def kth_diag_indices(a, k):
     '''Returns indices of the kth diagonal of matrix a'''
@@ -38,10 +30,10 @@ def choose_reaction(m):
     away we are from the main diagonal
     '''
     #Probabilities follow a truncated normal distribution N(1, sqrt(m))
-    sigma = np.sqrt(m/3)
+    sigma = np.sqrt((m))
     k = round(abs(np.random.normal(1, sigma)))
     #Avoid k being in the main diagonal
-    while k < 1:
+    while (k < 1):
         k = round(abs(np.random.normal(1, sigma)))
     #Get indices of that diagonal
     ind = kth_diag_indices(np.ones(shape = (m,m)), k)
@@ -106,8 +98,8 @@ def generate_network(s, m, nATP, mu, num_reac):
         #Choose a product from list of metabolites
         m_j = int(np.random.choice(products))
         #Create the tuple representing the sampled reaction
-        #r_sample = choose_reaction(m)
-        r_sample = np.array([[m_i], [m_j]])
+        r_sample = choose_reaction(m)
+        #r_sample = np.array([[m_i], [m_j]])
         #Is it an energetically valid reaction?
         #Check if Gibbs energy change is not too big in order to assure 
         #that the end metabolite is reached through multiple steps.

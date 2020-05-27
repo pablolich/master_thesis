@@ -28,7 +28,7 @@ def main(argv):
     #############################
 
     #Number of metabolites
-    m = 5
+    m = 10
     #Number of strains
     s = 5
     #Total energy contained in metabolitess
@@ -50,15 +50,15 @@ def main(argv):
     g = np.ones(s) 
     maintenance = 0.2*np.ones(s)
     #Set supply and dilution rate of metabolites
-    kappa = 0.01*np.ones(m) 
-    gamma = 0.5*np.ones(m)
+    kappa = 0.02*np.ones(m) 
+    gamma = 0.55*np.ones(m)
 
     ######################
     #2.Initial conditions#
     ######################
 
     #Time vector
-    t = np.linspace(1, 100, 1000)
+    t = np.linspace(1, 200, 2000)
     n = len(t)
     #All metabolite concentrations equal 0, and all strains have 1 individual
     Cinit = [0]*m
@@ -93,7 +93,7 @@ def main(argv):
     #Integrate model k times#
     #########################
     
-    k_max = 2
+    k_max = 100
     n = len(t)
     #Prealocate results storing elements
     Nn = np.zeros(shape = (k_max, s, n))
@@ -115,7 +115,8 @@ def main(argv):
         #Create one reaction network for each microbial strain
         for i in range(s):
             #Set number of reactions in the network
-            num_reac = np.random.randint(1, n_reac+1)
+            #num_reac = np.random.randint(1, n_reac+1)
+            num_reac = 10
             #Get reaction network
             reac_network = generate_network(s, m, nATP, mu, num_reac)
             #Store reaction network information for later use
@@ -132,38 +133,54 @@ def main(argv):
         Nn[k], Cn[k] = model_integration(t, s, m, tot_reac_network, mu, Eta, 
                                          q_max, ks, kr, reaction_rates, g, N, 
                                          C, maintenance, kappa, gamma)
+        #Reset initial conditions
+        #All metabolite concentrations equal 0, and all strains have 1 
+        #individual
+        Cinit = [0]*m
+        Ninit = [1]*s
+        #Prealocate matrices for storing solution's time evolution
+        C = np.zeros(shape = (m, n))
+        N = np.zeros(shape = (s, n))
+        #Add initial conditions to the first column of the solution's time 
+        #series
+        C[:,0] = Cinit
+        N[:,0] = Ninit
+        #Re-Initialize reaction rates matrix
+        reaction_rates = np.zeros(shape = (s,m,m))
         print(k)
         k += 1
 
-    #Some plotting for meeting
-    ##########################
-    
-    #Create panel layout
-    G = gridspec.GridSpec(2,4)
-    
-    plt.figure(figsize = (14,7))
-    #These 2 lines will be useful to present on monday
-    mean_reactions = sum(reactions)/len(reactions)
-    axes = plt.subplot(G[:,0:2])
-    plt.imshow(mean_reactions, extent = [-0.5,m-0.5,m-0.5,-0.5], 
-               origin = 'upper')
-    plt.colorbar()
+    #Save  Rn, Nn, Cn for later analysis
+    _type = ['classic', 'new']
+    np.save('../data/reactions_' + _type[0] + '.npy', Rn)
+    np.save('../data/population_' + _type[0] + '.npy', Nn)
+    np.save('../data/concentration_' + _type[0] + '.npy', Cn)
 
-    axes2 = plt.subplot(G[:,2:])
-    for i in range(len(N)):
-        plt.plot(t, N[i], label= 'Strain'+str(i))
+    ##Some plotting for meeting
+    ###########################
+    #
+    ##Create panel layout
+    #G = gridspec.GridSpec(2,4)
+    #
+    #plt.figure(figsize = (14,7))
+    ##These 2 lines will be useful to present on monday
+    #mean_reactions = sum(reactions)/len(reactions)
+    #axes = plt.subplot(G[:,0:2])
+    #plt.imshow(mean_reactions, extent = [-0.5,m-0.5,m-0.5,-0.5], 
+    #           origin = 'upper')
+    #plt.colorbar()
 
-    for i in range(len(C)):
-        plt.plot(t, C[i], linestyle = '--', label = 'Metabolite'+str(i))
-        
-    plt.legend()
-    plt.show()
-    import ipdb; ipdb.set_trace(context = 20)
+    #axes2 = plt.subplot(G[:,2:])
+    #for i in range(len(N)):
+    #    plt.plot(t, N[i], label= 'Strain'+str(i))
 
-    #plt.savefig('../results/reac_dynamics_'+option+'.pdf', bbox_inches='tight')
+    #for i in range(len(C)):
+    #    plt.plot(t, C[i], linestyle = '--', label = 'Metabolite'+str(i))
+    #    
+    #plt.legend()
+    #plt.show()
 
-    return 0
-
+    ##plt.savefig('../results/reac_dynamics_'+option+'.pdf', bbox_inches='tight')
 
     return 0
 
