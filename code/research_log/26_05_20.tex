@@ -1,0 +1,70 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage[right=20mm,left=20mm,top=20mm,bottom=20mm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[utf8x]{inputenc}
+\usepackage{graphicx}
+\graphicspath{{../../results/}}
+\usepackage{subcaption}
+\usepackage{caption}
+
+\begin{document}
+	
+    \LARGE{\textbf{Research log summary}}\hfill\Large{May 26, 2020}
+    \section*{Progress}
+		\begin{itemize}
+			\item Fixed diverging dynamics and implemented the simplest model. See figure \ref{fig:dynamics}
+		
+    	\begin{figure}[h]
+    		\centering
+    		\includegraphics[width=0.7\linewidth]{reac_dynamics_2_inp.pdf}
+    		\caption{Time series of population and concentration dynamics}
+    		\label{fig:dynamics}
+    	\end{figure}
+    		\item Implemented a new algorithm for generating reaction networks:\\
+    		A reaction is expressed here as a matrix element of one of the upper diagonals of a $ (m-1)\times(m-1) $ matrix, where $ m $ is the number of metabolites. Therefore, a general reaction can be expressed as $ r_{i,k} = (i, i+k) $. Thus $ k $ is the k$ ^{th} $ diagonal, and $ i $ represents one of its elements. The algorithm can be summarized in the following 3 steps.\\
+			1. Sample $ k $  from  a truncated normal distribution $N(1,  \frac{\sqrt {m - 1}}{s})$ with limits $ [1, m-1] $, where $ s $ is a scale term specifying how broad the normal distribution is (ie, the bigger $ s $, the more unlikely it is to sample a very energetic reaction).\\
+			2. Sample $ i $ from a uniform distribution $ U(0, m-1) $.\\
+			3. The reaction $ r_{i,k} $ is then stored, and the proces is repeated until $ n_{reac} $ reactions have been sampled.\\
+    	\item Cleaned-up and modularized the code into different files so that it is easier to perform simulations varying parameters and store the results\\
+    	\item Played around changing different parameters. Particularly, changing $ \kappa $ and $ \gamma $ influences a lot in the convergence of the model. Also, allowing more energetic reactions to happen (decreasing $ s $) increases the richness of the stable state. (see figure \ref{fig:richnesss} )
+    
+	    \begin{figure}
+	    	\centering
+	    	\begin{subfigure}[b]{0.49\textwidth}
+	    		\centering
+	    		\includegraphics[width=\textwidth]{richness_high.pdf}
+	    		\label{fig:y equals x}
+	    	\end{subfigure}
+	    	\hfill
+	    	\begin{subfigure}[b]{0.49\textwidth}
+	    		\centering
+	    		\includegraphics[width=\textwidth]{richness_low.pdf}
+	    		\label{fig:five over x}
+	    	\end{subfigure}
+	    	\caption{High and low richness}
+	    	\label{fig:richnesss}
+	    \end{figure}
+    \end{itemize}
+    \section*{Questions}
+	\begin{itemize}
+	    \item Is it worth studying the effect of reaction network type on the dynamics of the system? For example, does the number of reactions affect how well an organism will perform? 
+	    \item Is it okay transforming negative elements to 0 if the time step is very low?
+	    \item Any thoughts on how to choose the number of reactions in the network?
+	 	\item Analytic work on stability of the model? Maybe at least on how $ \gamma $ $ \kappa $ affect the stability.
+	 	\item Can we predict what organisms will  perform better from their reaction network?
+	 	\item Can a group selection study be conceived here?
+	 	\item What happens if I introduce a new population in an environment where a stable state has been reached? Coalescence of communities.
+	 	\item Go into the wild world of thermodynamics.
+	\end{itemize}
+
+	
+
+
+	\section*{Next steps}
+		\begin{itemize}
+			\item Start reading about things to come up with something to do. Ideal scenario: Whatever I come up with needs to be good enough to be part of Jacob's future paper, and feasible enough to be comleted in 2 months!?
+		\end{itemize}
+	
+		
+		
+\end{document}
