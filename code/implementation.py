@@ -30,20 +30,22 @@ def choose_reaction(m):
     away we are from the main diagonal
     '''
     #Probabilities follow a truncated normal distribution N(1, sqrt(m))
-    sigma = np.sqrt((m))
+    sigma = np.sqrt((m-1))
     k = round(abs(np.random.normal(1, sigma)))
-    #Avoid k being in the main diagonal
-    while (k < 1):
+    #Truncate distribution between 1 and m-1
+    while (k < 1) | (k > m-1):
         k = round(abs(np.random.normal(1, sigma)))
     #Get indices of that diagonal
     ind = kth_diag_indices(np.ones(shape = (m,m)), k)
-    #Choose uniformly at random one of the elements in this diagonal
+    #Choose uniformly at random one of the elements from kth diagonal
     try: 
+        #Draw sample
         el = np.random.randint(m-k)
         #Substrate
         sub = ind[0][el]
         #Product
         prod = ind[1][el]
+    #If k = m-1, there is only one posible reaction
     except: 
         sub = 0
         prod = m-1
@@ -51,6 +53,33 @@ def choose_reaction(m):
     reaction = np.array([[sub], [prod]])
 
     return reaction
+
+def diag_element(m, s):
+    '''
+
+    Chooses a matrix element of the form (i, i+k), where k represents the
+    kth upper diagonal, and its sampled from a truncated normal distribution,
+    and i one of the kth diagonal elements, and its sampled from a uniform 
+    distribution.
+
+    Parameters:
+        m (int): number of metabolites
+        s (float): shrinkage factor of normal distribution's variance. 
+
+    '''
+
+    #Pick k from a normal truncated distribution between [1, m-1], N(1, sigma)
+    sigma = sqrt(m-1)/s
+    k = 0
+    while (k < 1) | (k > m-1):
+        k = round(abs(np.random.normal(1, sigma)))
+    #Pick i from a uniform distribution U(0, m-k)
+    i = np.random.randint(m-k)
+    #Form reaction
+    reaction = np.array([[i],[i+k]])
+
+    return reaction
+    
 
 
 def generate_network(s, m, nATP, mu, num_reac):

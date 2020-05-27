@@ -23,7 +23,7 @@
     		\item Implemented a new algorithm for generating reaction networks:\\
     		A reaction is expressed here as a matrix element of one of the upper diagonals of a $ (m-1)\times(m-1) $ matrix, where $ m $ is the number of metabolites. Therefore, a general reaction can be expressed as $ r_{i,k} = (i, i+k) $. Thus $ k $ is the k$ ^{th} $ diagonal, and $ i $ represents one of its elements. The algorithm can be summarized in the following 3 steps.\\
 			1. Sample $ k $  from  a truncated normal distribution $N(1,  \frac{\sqrt {m - 1}}{s})$ with limits $ [1, m-1] $, where $ s $ is a scale term specifying how broad the normal distribution is (ie, the bigger $ s $, the more unlikely it is to sample a very energetic reaction).\\
-			2. Sample $ i $ from a uniform distribution $ U(0, m-1) $.\\
+			2. Sample $ i $ from a uniform distribution $ U(0, m-k) $.\\
 			3. The reaction $ r_{i,k} $ is then stored, and the proces is repeated until $ n_{reac} $ reactions have been sampled.\\
     	\item Cleaned-up and modularized the code into different files so that it is easier to perform simulations varying parameters and store the results\\
     	\item Played around changing different parameters. Particularly, changing $ \kappa $ and $ \gamma $ influences a lot in the convergence of the model. Also, allowing more energetic reactions to happen (decreasing $ s $) increases the richness of the stable state. (see figure \ref{fig:richnesss} )
