@@ -121,12 +121,16 @@ def model(t, z, s, m, kappa, gamma, networks, mu, Eta, q_max, ks, kr, g, maint):
 
     Parameters:
         t (tuple): time span 
-        s (int): number of strains
-        m (int): number of metabolites
+        z (s+m list): concatenated N [(sxn array): population for each strain.]
+                      and C [(mxn array): concentration for each metabolite.]
+        s (int): number of strains.
+        m (int): number of metabolites.
+        kappa (1xm array): supply rate of each metabolite.
+        gamma (1xm array): dilution rate of each metabolite.
         networks (s tuples): reaction network of each strain. Each 
                              tuple stores two arrays for substrates and
                              products.
-        mu (1xm array): chemical potential of each metabolite
+        mu (1xm array): chemical potential of each metabolite.
         Eta (mxmxs array): energy associated to each of the possible single 
                            reactions for each strain.
         q_max (sx1 array): maximal reaction rate. Each element of the array is
@@ -143,11 +147,6 @@ def model(t, z, s, m, kappa, gamma, networks, mu, Eta, q_max, ks, kr, g, maint):
         g (1xs array): proportionality constant relating energy to population 
                        of each strain.
         maint (1xs array): maintenance energy requirement of each strain.
-        kappa (1xm array): supply rate of each metabolite.
-        gamma (1xm array): dilution rate of each metabolite.
-        N (sxn array): population vector time series for each strain.
-        C (mxn array): metabolite concentration time series vector for each 
-                       metabolite.
 
     '''
 
