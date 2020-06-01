@@ -53,3 +53,13 @@ Introduce a new population in the remanents of an old one; population ingeneerin
 How does the number of reactions affect the performance?
 Analytical work with this model?
 
+
+May 28,2020
+
+Less reactions more energetic == More reactions less energetic (only in terms of energy)
+The deal with negative concentrations. Precision errors can turn low concentrations to negative ones. If this happens, the population will decrease, in the next time step, decreasing the demand of the metabolite with low concentration. As a result of this, in the following time step that concentration will increase. This yields oscillatory stable dynamics.
+In order to avoid oscilations, one could try to set negative concentrations to 0. However, the population (and the metabolites produced by its metabolism) diverges oscillatorily. This is caused because a concentration of 0 lowers the population a bit, but not as much as the mathematically obtained negative concentration would. This is why in the next step, the supply of metabolite will increase the population more than it was decreased in the previous step, by a 0-metabolite concentration that should have been negative.Consequently, the population increases monotonously.
+
+Jun 01,2020
+
+I can create a function to assign probabilities to each integer by binning what is around int, and use it to directly sample integers normally distributed. This allows me to draw integers with replacement.

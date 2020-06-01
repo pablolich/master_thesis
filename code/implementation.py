@@ -19,40 +19,12 @@ import scipy.stats as stats
 
 ## FUNCTIONS ##
 
-def kth_diag_indices(a, k):
-    '''Returns indices of the kth diagonal of matrix a'''
-    rows, cols = np.diag_indices_from(a)
-    return rows[:-k], cols[k:]
-
-def choose_reaction(m):
-    '''
-    Chooses one reaction with a probability p that decreases the further 
-    away we are from the main diagonal
-    '''
-    #Probabilities follow a truncated normal distribution N(1, sqrt(m))
-    sigma = np.sqrt((m-1))
-    k = round(abs(np.random.normal(1, sigma)))
-    #Truncate distribution between 1 and m-1
-    while (k < 1) | (k > m-1):
-        k = round(abs(np.random.normal(1, sigma)))
-    #Get indices of that diagonal
-    ind = kth_diag_indices(np.ones(shape = (m,m)), k)
-    #Choose uniformly at random one of the elements from kth diagonal
-    try: 
-        #Draw sample
-        el = np.random.randint(m-k)
-        #Substrate
-        sub = ind[0][el]
-        #Product
-        prod = ind[1][el]
-    #If k = m-1, there is only one posible reaction
-    except: 
-        sub = 0
-        prod = m-1
-    #Create reaction
-    reaction = np.array([[sub], [prod]])
-
-    return reaction
+def trunc_normal(mu, sigma, a, b):
+    '''Sample from a [a, b]-truncated normal distribution N(mu, sigma)'''
+    q = np.random.normal(mu, sigma)
+    while (q < a) | (q > b):
+        q = (np.random.normal(1, sigma))
+    return q
 
 def diag_element(m, s):
     '''
@@ -63,24 +35,74 @@ def diag_element(m, s):
     distribution.
 
     Parameters:
-        m (int): number of metabolites
+        m (int): number of metabolites.
         s (float): shrinkage factor of normal distribution's variance. 
+
+    Returns:
+        (2x1 array): indices of the ith element from the kth diagonal.
 
     '''
 
     #Pick k from a normal truncated distribution between [1, m-1], N(1, sigma)
-    sigma = sqrt(m-1)/s
-    k = 0
-    while (k < 1) | (k > m-1):
-        k = round(abs(np.random.normal(1, sigma)))
-    #Pick i from a uniform distribution U(0, m-k)
+    mu = 1
+    sigma = np.sqrt(m-1)/s
+    a = 1
+    b = m-1
+    sample = trunc_normal(mu, sigma, a - 0.5, b + 0.5)
+    k = round(sample)
+    #Pick i from a uniform distribution U(0, m-k-1)
     i = np.random.randint(m-k)
-    #Form reaction
-    reaction = np.array([[i],[i+k]])
+    #Return matrix element (i, i+k)
+    return np.array([[i],[i+k]])
 
-    return reaction
-    
+##Test of the above function##
+#reac_network = np.array([[], []], dtype = 'int')
+#m = 50
+#n_reac = 5000
+#for i in range(n_reac):
+#    reac = diag_element(m, 1)
+#    reac_network = np.concatenate((reac_network, reac),axis = 1)
+#reac_network = tuple(reac_network)
+#reactions = np.zeros(shape = (m,m))
+#reactions[reac_network] = 1
+#import matplotlib.pylab as plt
+#plt.imshow(reactions)
+#plt.show()
 
+def network(m, n_reac, s = 1):
+    '''
+    Creates reaction network by sampling n_reac. Note that the number of 
+    reactions in the network, N_reac <= n_reac, due to repeated reactions. 
+
+    Parameters:
+        m (int): number of metabolites.
+        n_reac (int): number of reactions to be sampled.
+        s (float): scale of normal distribution of the reaction network
+
+    Returns: 
+        network (tuple): reaction network.
+    '''
+
+    #Counter for number of reactions
+    n = 0
+    #Network container
+    network = np.array([[],[]], dtype = int)
+    while n < n_reac:
+        #Add 1 sampled reaction to the network
+        network = np.concatenate((network, diag_element(m, s)), axis = 1)
+        n += 1
+    #Eliminate repeated reactions
+    network = np.unique(network, axis = 1)
+    return tuple(network)
+
+##Test network
+#network = network(10, 10)
+#reactions = np.zeros(shape = (10, 10))
+#reactions[network] = 1
+#
+#import matplotlib.pylab as plt
+#plt.imshow(reactions)
+#plt.show()
 
 def generate_network(s, m, nATP, mu, num_reac):
 
@@ -153,7 +175,7 @@ def model_integration(t, s, m, tot_reac_network, mu, Eta, q_max, ks, kr,
                       reaction_rates, g, N, C, maintenance, kappa, gamma):
 
     '''
-    Integrate jacob's model.
+    Integrate Jacob's model.
 
     Parameters:
         t (1xn array): time vector
@@ -186,78 +208,5 @@ def model_integration(t, s, m, tot_reac_network, mu, Eta, q_max, ks, kr,
                        metabolite.
 
     '''
-
-    #Get number of timepoints
-    n = len(t)
-    #Loop through time
-    for i in range(1, n):
-        #Declare timespan for this iteration of numerical integration
-        tspan = [t[i-1], t[i]]
-
-        #1. Calculate  rates and asociated quatnitiesfor time step i
-        ############################################################
-
-        #Note that rates change after every iteration of the integration
-        #because the concentrations change, that is why they need to be 
-        #recalculated after each integration step.
-        #Prealocate elements that will be used later on
-        G = np.zeros(s)
-        M = np.zeros(s)
-        flux_in_out = np.zeros([s, m])
-        #Loop through all strains
-        for j in range(s):
-            #Get concentrations from those metabolites taking part in reaction 
-            #network 
-            S = C[tot_reac_network[j][0], i-1]
-            P = C[tot_reac_network[j][1], i-1]
-            #Get chemical potentials of those metabolites
-            mu_S = mu[tot_reac_network[j][0]]
-            mu_P = mu[tot_reac_network[j][1]]
-
-            #Calculate quantities necesary for the integration
-            ###################################################################
-            #The following calculations are performed for all reactions at once
-            ###################################################################
-            #Calculate reaction quotients
-            Q = r_quotient(S, P)
-            #Gibs free energy change is the difference between chemical 
-            #potentials (stechiometric coefficients are all 1)
-            DeltaG = mu_P - mu_S
-            #Get etas for reaction network
-            eta = Eta[j][tot_reac_network[j]]
-            #Calculate equilibrium constant
-            Keq = K_equilibrium(DeltaG, eta, DeltaGATP, R, T)
-            #Calculate thetas
-            theta = Theta(Q, Keq)
-            #Calculate rates
-            q_reac = rate(q_max[j], theta, ks[j], kr[j], S)
-            #Turn nans to 0
-            nans = np.isnan(q_reac)
-            q_reac[nans] = 0
-            #Include reaction rates in reaction network matrix
-            reaction_rates[j][tot_reac_network[j]] = q_reac
-            #Calculate growth
-            Jgrow = jgrow(reaction_rates[j], Eta[j])
-            #Calculate flux in - flux out
-            flux_in_out[j,:] = vin_out(reaction_rates[j])
-            #Calculate Growth and Maintenance vectors
-            G[j] = Grow(g[j], N[j, i-1], Jgrow)
-            M[j] = Maintenance(g[j], N[j, i-1], maintenance[j])
-            ###################################################################
-
-        #2. Integrate model
-        ###################
-
-        #Initial conditions for poplation and concentrations
-        z0 = list(N[:, i-1])+list(C[:, i-1])
-        #Integration
-        z = odeint(model, z0, tspan, args=(s,m,G,M,kappa,gamma,flux_in_out))
-        #Store solutions 
-        N[:,i] = z[1][0:s]
-        C[:,i] = z[1][s:s+m]
-        #Transform negative elements to 0
-        C[:,i] = C[:,i].clip(min=0)
-        #Next initial condition
-        z0 = z[1]
 
     return N, C

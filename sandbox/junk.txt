@@ -31,3 +31,13 @@
     #                      [[0,0,0], [0,0,1], [0,0,0]]])
     #tot_reac_network = [tuple([np.array([0]),np.array([1])]), 
     #                    tuple([np.array([0]),np.array([2])])]
+
+
+
+    ##Manually create the reaction networks for each strain
+    #tot_reac_network[0] = tuple(np.array([[0],[1]]))
+    #tot_reac_network[1] = tuple(np.array([[0],[1]]))
+    ##tot_reac_network[2] = tuple(np.array([[0],[1]]))
+    #reactions[0][tot_reac_network[0]] = 1
+    #reactions[1][tot_reac_network[1]] = 1
+    #reactions[2][tot_reac_network[2]] = 1
