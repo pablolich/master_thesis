@@ -41,3 +41,100 @@
     #reactions[0][tot_reac_network[0]] = 1
     #reactions[1][tot_reac_network[1]] = 1
     #reactions[2][tot_reac_network[2]] = 1
+
+#Original reaction network generator function
+#############################################
+
+def generate_network(s, m, nATP, mu, num_reac):
+
+    '''
+    Create reaction network of feasible reactions (those which associated
+    Gibbs energy change is lower than nATP*D(G_ATP)) based on the
+    number of metabolites,  microbial strains and chemical potentials.
+
+    Parameters:
+        
+        s (int): number of strains
+        m (int): number of metabolites
+        nATP (float): moles of ATP generated per reaction
+        mu (array): vector of chemical potentials for each metabolite
+
+    Returns:
+
+        tot_reac_network (list): reaction network for each strain
+        reactions (array): s matrices of 0 and 1, where 1 represents that
+        reaction i-->j is present in strain s.
+
+    '''
+
+    #Initialize output
+    reac_network = np.array([[], []], dtype = 'int')
+    #list of present substrates (at the start only substrate 0 is present, so 
+    #the network will always start at 0)
+    list_m_i = [0] 
+    #Initialize reaction counter
+    num = 0
+    while num < num_reac: 
+        #Choose a substrate from list of present substrates (at the start
+        #only substrate 0 is present, so the network will always start at
+        #0)
+        m_i = int(np.random.choice(list_m_i))
+        #Avoid choosing the last metabolite
+        while m_i+1 == m:
+            m_i = int(np.random.choice(list_m_i))
+        #Create list of possible products of the reaction compatible where
+        #Delta G < 0
+        products = np.arange(m_i+1, m, dtype = int)
+        #Note that we start from m_i to satisfy the latter condition. 
+        #doing m_i + 1 avoids having reactions i-->i
+        #Choose a product from list of metabolites
+        m_j = int(np.random.choice(products))
+        #Create the tuple representing the sampled reaction
+        r_sample = choose_reaction(m)
+        #r_sample = np.array([[m_i], [m_j]])
+        #Is it an energetically valid reaction?
+        #Check if Gibbs energy change is not too big in order to assure 
+        #that the end metabolite is reached through multiple steps.
+        if mu[r_sample[1]] - mu[r_sample[0]] > -nATP*DeltaGATP:
+            #Add the reaction to reac_network
+            reac_network = np.concatenate((reac_network, r_sample),axis = 1)
+            #Eliminate repeated reactions
+            reac_network = np.unique(reac_network, axis = 1)
+            #Add product to list of substrates
+            list_m_i.append(m_j)
+            #When the last metabolite is reached, stop sampling. The 
+            #reaction network has reached the end product (that with the 
+            #lowest chemical potential)
+        #Increase reaction counter
+        num += 1
+    reac_network= tuple(reac_network)
+    
+    return reac_network
+
+#############################################################################
+    
+    #Some plotting for meeting
+    ##########################
+    
+    #Create panel layout
+    G = gridspec.GridSpec(2,4)
+    
+    plt.figure(figsize = (14,7))
+    mean_reactions = sum(reactions)/len(reactions)
+    axes = plt.subplot(G[:,0:2])
+    plt.imshow(mean_reactions, extent = [-0.5,m-0.5,m-0.5,-0.5], 
+               origin = 'upper')
+    plt.colorbar()
+
+    axes2 = plt.subplot(G[:,2:])
+    for i in range(len(N)):
+        plt.plot(t, N[i], label= 'Strain'+str(i))
+
+    for i in range(len(C)):
+        plt.plot(t, C[i], linestyle = '--', label = 'Metabolite'+str(i))
+        
+    plt.legend()
+    plt.show()
+
+##############################################################################
+    #plt.savefig('../results/reac_dynamics_'+option+'.pdf', bbox_inches='tight')
