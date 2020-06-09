@@ -63,3 +63,44 @@ In order to avoid oscilations, one could try to set negative concentrations to 0
 Jun 01,2020
 
 I can create a function to assign probabilities to each integer by binning what is around int, and use it to directly sample integers normally distributed. This allows me to draw integers with replacement.
+
+Jun 02,2020
+
+It looks like forcing microbes to be generalists (varied pathways) generates higher richnes. In the model, generalists are favored over specialists. Is this realistic?
+First I have to take advantage of full power of the model, to then start doing other treatments. I have to find values for constants, etc...
+
+
+Jun 05,2020
+
+Representing individual performance versus actual performance in the community yields a very mild positive correlation, which is what we would expect. The line x = y is an upper limit of this plot. This means that no species in the community performs better than by itself. 
+It would be nice to plot this points with varying size depending on how many members the community has.
+
+Jun 06,2020
+
+Plot the total reaction network of surviving species
+Vary the type of reaction network that each species can have
+Implement a more efficient individual performance calculator.
+
+Jun 06,2020
+
+Simulate a lot of stuf for different reaction number and try to plot the phase transition from f being predictive to it not being predictive at all.
+I found out that mean individual performance is a good prpedictor when communities have low richness. I interpret this as the winning species being able to outperform in all circumstances. This is not the interesting regime (its also not the realistic one). We are looking for communities which structure is shaped by interactions between community members.
+
+Jun 07,2020
+
+Investigate the influence of temperature in community persistence??
+Characterize how are the reaction networks of species that survive in communities where individual performance is not a predictor of community structure. Maybe that is where the Lyapunov function numerical equivalent can be found. 
+
+Investigate why for large m, s, num_reac, n_simul, the individual integration stops at some point.
+
+Profile code to see why is it slow for high number of metabolites (even when the reaction number is small)
+
+Jun 08,2020
+
+Generate boxed reaction networks (niche formation)
+I found that winning species don't have networks that systematically are able to harvest more energy. If I calculate the mean energy harvested by these species, according to their reaction networks, this one is of the same order as the energy harvested by the loosing species. 
+If I impose a tradeoff in the costs, things get caotic as fuck. I no longer have less resources when more species... I no longer have a positive correlation for low richnesses... It is fucked uuup. Time to investigate reaction networks.
+It is so different, that sometimes the slope of the line is >> 1. Even when there are many points. 
+When I plot individual performance of all organisms vs the community performance, I find a weak stripped pattern. This indicates that organisms in the same strip share something. I want to investigate what is this that they share. I will start by histogramming the individual performances to identify the strips (high frequencybins should correspond to the strips). When I identify this communities, I should plot the individual reaction network of this guys.
+I have plotted the community network for all communities and there is no apparent pattern. This makes sense because neither specialists nor generalists win. Try not using Tikhonov's costs, what are the community networks in this case?
+The length of prediction$stable.states is less than the length of surv_networks. Investigate why. Maybe clean up code.

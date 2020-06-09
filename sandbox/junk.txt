@@ -113,6 +113,7 @@ def generate_network(s, m, nATP, mu, num_reac):
 
 #############################################################################
     
+
     #Some plotting for meeting
     ##########################
     
@@ -120,7 +121,7 @@ def generate_network(s, m, nATP, mu, num_reac):
     G = gridspec.GridSpec(2,4)
     
     plt.figure(figsize = (14,7))
-    mean_reactions = sum(reactions)/len(reactions)
+    mean_reactions = sum(Rn[0])/len(Rn[0])
     axes = plt.subplot(G[:,0:2])
     plt.imshow(mean_reactions, extent = [-0.5,m-0.5,m-0.5,-0.5], 
                origin = 'upper')
@@ -128,13 +129,12 @@ def generate_network(s, m, nATP, mu, num_reac):
 
     axes2 = plt.subplot(G[:,2:])
     for i in range(len(N)):
-        plt.plot(t, N[i], label= 'Strain'+str(i))
+        plt.plot(t[0], Nn[0][i], label= 'Strain'+str(i))
 
     for i in range(len(C)):
-        plt.plot(t, C[i], linestyle = '--', label = 'Metabolite'+str(i))
+        plt.plot(t[0], Cn[0][i], linestyle = '--', label = 'Metabolite'+str(i))
         
     plt.legend()
     plt.show()
-
 ##############################################################################
     #plt.savefig('../results/reac_dynamics_'+option+'.pdf', bbox_inches='tight')

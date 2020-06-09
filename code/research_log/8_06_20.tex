@@ -1,0 +1,45 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage[right=20mm,left=20mm,top=20mm,bottom=20mm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[utf8x]{inputenc}
+\usepackage{graphicx}
+\graphicspath{{../../results/}}
+\usepackage{subcaption}
+\usepackage{caption}
+\usepackage{braket}
+
+\begin{document}
+	
+    \LARGE{\textbf{Research log summary}}\hfill\Large{June 8, 2020}
+    \section*{Progress}
+		\begin{itemize}
+			\item Actually fixed diverging dynamics
+			\item The mean individual abundance\footnote{The abundance at equilibrium of the species when it is by itself in the environment} $ \braket{f} $ of the members of each community  presents a positive correlation with the mean of the abundances of each species present when the community is established. However, this correlation vanishes as the number of coexisting species increases.
+			    	\begin{figure}[h]
+				\centering
+				\includegraphics[width=0.7\linewidth]{individual_performance.pdf}
+				\caption{Mean of abundances of each species in the community as a function of the mean of individual performances of members in the community. When communities are more diverse, the individual perfromance of species present at the community looses relevance as a predictor of the species success.}
+				\label{fig:individual_performance}
+			\end{figure}
+			\item The energy that a species is capable to harvest is not a robust predictor of the success of a species  in the community.
+			\item When the number of reactions possesed by each strain is decreased, the richness of the resulting community tends to be higher (niche formation?)
+    	\end{itemize}
+    \section*{Questions}
+	\begin{itemize}
+	   \item Are results in figure \ref{fig:individual_performance} reasonable? Is it expected that the predictive power of individual performance decreases so fast with the community richness? For Tikhonov's paper, where they only  model competitive interactions, the individual performance of a species is a better predictor than here. This model is more general because it includes non-competitive interactions too (products of one strain are substrates for another). Is this the reason why $ \braket{f} $ is a better predictor in a purely competitive setting than in settings where cooperation is allowed? Also, is that a trivial result, or worth quantifying? 
+	   \item The interesting regime is that where $ \braket{f} $ is not a good predictor. We are looking for communities which structure is shaped by interactions between community members, instead of communities where a few idividuals outperform the rest in all circumnstances right?
+	   \item Is it realistic the diversification option (only one metabolite is supplied?) Can I carry the same analysis when I only supply one of the resources?
+	   \item I am thinking of including a trade-off effect in the costs. What are the benefits/drawbacks? Is it more realistic than not doing so?
+	\end{itemize}
+
+	\section*{Next steps}
+		\begin{itemize}
+			\item Characterize reaction netwoks of each surviving species, and community reaction networks. Use these to try to come up with a quantity that measures the community performance. 
+			\item Read Tilman 1982 and MacArthur 1969.	
+			\item Include tradeoff in the costs. Analyze how the properties of community reaction network change when I do that. 
+			\item Make the individual performance calculator faster (if I have time)
+		\end{itemize}
+	
+		
+		
+\end{document}

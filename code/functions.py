@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 global R; R = 8.314462618 # J/(K mol)
 global DeltaGATP; DeltaGATP = 75e3 # J/mol
 global T; T = 298 # K 
-global E = 3e6 # J (Total energy contained in metabolites)
+global E; E = 3e6 # J (Total energy contained in metabolites)
 
 #Functions to calculate quantities in the model
 
@@ -197,7 +197,7 @@ def model(t, z, s, m, kappa, gamma, networks, mu, Eta, q_max, ks, kr, g, maint):
         flux_in_out[j,:] = vin_out(rates[j])
         #Calculate Growth and Maintenance vectors
         G[j] = Grow(g[j], N[j], Jgrow)
-        M[j] = Maintenance(g[j], N[j], maintenance[j])
+        M[j] = Maintenance(g[j], N[j], maint[j])
 
 
     #Vectorized model equations
