@@ -104,3 +104,30 @@ It is so different, that sometimes the slope of the line is >> 1. Even when ther
 When I plot individual performance of all organisms vs the community performance, I find a weak stripped pattern. This indicates that organisms in the same strip share something. I want to investigate what is this that they share. I will start by histogramming the individual performances to identify the strips (high frequencybins should correspond to the strips). When I identify this communities, I should plot the individual reaction network of this guys.
 I have plotted the community network for all communities and there is no apparent pattern. This makes sense because neither specialists nor generalists win. Try not using Tikhonov's costs, what are the community networks in this case?
 The length of prediction$stable.states is less than the length of surv_networks. Investigate why. Maybe clean up code.
+Checked that if I have a fixed cost, dynamics are dominated by generalists
+
+Jun 09,2020
+
+When plotting the community reaction networks, I find that the lower part of the matrix is always coloured, indicating that individuals that have reactions involving the lower metabolites are more popular. I think this is because the reactions proceed in only one direction. Thus, there will be a net flow of metabolite and the last metabolites will be produced more abundantly. Therefore, strains possesing reaction that involve the last metabolite will be favored. This doesn't seem very realistic. To avoid it, I can impose a gradient of energy in the metabolites, so that even if you have reactions in the lower part of metabolite space, you are not favored by its big abundance.
+
+I want to investigate 4 main questons: 
+	1. Have repeated and continuous coalescence events contributed to the high microbial diversity in some habitats, such as the soil?
+	2. Do 'hybrid' communities exhibit a broader functional range and higher productivity compared with communities entering a coalescence event?
+	3. Will members of communities with a history of coalescence have a higher persistence upon interaction with a 'naive' community?
+	4. Can we predict properties of coalescent communities using approaches derived from the study of interacting networks?
+
+Can I treat a community network as an organism?
+
+Calculate how the networks varies with time. Particularly, record the modularity of the network over time.
+Also can track how the 'individual' modularity of both networks varies with time, and how the 'total' modularity of the resulting network varies with time. I would do this to try to find temporal coherence before they fully merge. This coherence would suggest that these communities interact as internally integrateed units rather than just as a collection of many species that sudenly interact with another collection of species. The species replacement in a coalescent process of this type occurs within these newly  interacting integrated units rather than a more stochastic rearrangement of interactions within the entire new network. This type of network dynamic is an emergent property of the whole network, which arises from the fact that components of local communities can in some cases act as whle units with strong intersactions within these units and weak interactions between. 
+
+I could include in the costs, reactions that are very energetic, so that you don't really get to do that because it costs so much.
+On the previous note, I wonder how could I include randomness in the costs in a justified manner. Right now the randomness in the costs comes from the reaction network, which is not random at all! There are a fixed number of different reaction networks. The apparent randomness stems from the fact that the number of strains in a simulation is very small compared to the number of strains that can exist. I shall keep it like that and come back to it later.
+
+Jun 10,2020
+
+What I want to do this week: Start performing community coalescence events and record candidates to community fitnesss on the way. inbetweeness, in-degree, out-degree.
+
+Check why my analysis.R script is failing to plot all communities!!
+
+Can I make my reaction network generator a faster one?
