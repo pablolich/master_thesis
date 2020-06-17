@@ -1,0 +1,43 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage[right=20mm,left=20mm,top=20mm,bottom=20mm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[utf8x]{inputenc}
+\usepackage{graphicx}
+\graphicspath{{../../results/}}
+\usepackage{subcaption}
+\usepackage{caption}
+\usepackage{braket}
+
+\begin{document}
+	
+    \LARGE{\textbf{Research log summary}}\hfill\Large{June 8, 2020}
+    \section*{Progress}
+		\begin{itemize}
+			\item Imposing tradeoff makes dynamics more complex. Probably because now reaction networks are more diverse (both specialists and generalists are equally fit).
+			\item  $ \braket{f} $ is no longer a good predictor of the performance at community even for low values of richness.
+			\item Created community reaction network, with m nodes and $ n_{reac} $ edges. Calculated betweenness, in-degree, out-degree, and their respective standar deviations. These would measure how efficiently the community depleates resources simultaneously.
+			\item Betweenness doesn't seem to be a quantity of interest, since it doesn't display recognizable patterns. 
+			\item Read a lot. Defined my thesis more precisely
+    	\end{itemize}
+    \section*{Questions}
+	\begin{itemize}
+	   \item I want to investigate 4 main questons:\\
+	         1. Have repeated and continuous coalescence events contributed to the high microbial diversity in some habitats, such as the soil?\\
+	        2. Will members of communities with a history of coalescence have a higher persistence up on interaction with a 'naive' community?\\
+	        3. Can we predict properties of coalescent communities using approaches derived from the study of interacting networks?\\
+	        In which regime should I study this questions: diversification regime, or all resources present regime?
+		\item I am setting the numer of reactions of each strain by choosing a number from a uniform distribution [1, ${m}\choose{2}$]. Maybe this is not realistic, because it gnereates network with a very high connectance (more than realistically feasible).
+		\item Record modularity?
+	
+	\end{itemize}
+
+	\section*{Next steps}
+		\begin{itemize}
+			\item Start performning community coalescence events and record all the quantities (richness, degree of network, richness, abundances) in $ C_1 $, $ C_2 $, $ C $. 
+			\item Keep reading communiy coalescence papers.
+			\item Vary environment conditions (diversification/ all resources)\\
+		\end{itemize}
+	
+		
+		
+\end{document}

@@ -70,10 +70,11 @@ prediction = data.frame('Strain' = one$strain,
                         'Performance' = two$performance, 
                         'Stable.State' = one$stable.state,
                         'Richness' = richness, 
-                        row.names = seq(1,150*200))
+                        row.names = seq(1,n_sim*200))
 
 #Eliminate extinctions and outliers
 prediction = prediction[!(prediction$Stable.State<1),]
+prediction = prediction[which(predict_mean$Stable.State<1e5),]
 prediction = prediction[(prediction$Performance<1000),]
 prediction = prediction[order(prediction$Simulation, prediction$Strain),]
 

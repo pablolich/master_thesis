@@ -1,10 +1,12 @@
 
-plot_time_series = function(data){
+plot_time_series = function(data, sim, col){
   #Plot time series data
-  p = ggplot(data, aes(x = t, y = population, color = strain))+
+  p = ggplot(data, aes(x = t, y = population, color = col))+
+    ggtitle(sim)+
     geom_line() +
-    theme(legend.title = element_blank(),
-          legend.position = "none") + 
+     theme(
+          legend.title = element_text(),
+          legend.position = "bottom") + 
     scale_x_continuous(trans = "log10") 
   return(p)
 }

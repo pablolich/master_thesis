@@ -90,7 +90,7 @@ def main(argv):
     #place)
     N_reac = comb(m, 2, exact = True)
     #Perform n_simul simulations
-    n_simul = 2
+    n_simul = 150
     #Generate reaction network for each strain
     tot = s*n_simul
     n_reac_s = np.zeros(tot, dtype = 'int')
@@ -115,7 +115,6 @@ def main(argv):
         #Set cost based on the number of reactions
         maintenance[i] = xi0*n_reac_s[i]
 
-    n = 0
 
     ####################
     #3. Integrate model#
@@ -135,37 +134,38 @@ def main(argv):
     zn_stable = np.zeros(shape = (n_simul, m+s))
     tn = np.array([])
     n_label = np.array([])
-    #K = np.zeros(shape = (n_simul, s))
+    K = np.zeros(shape = (n_simul, s))
     while n < n_simul:
 
         #Network
         network_n = tot_reac_network[s*n:s*(n+1)]
         #Maintenance vector
         maintenance_n = maintenance[s*n:s*(n+1)]
-        ##Get individual performance of each species
-        ##Initialize vector of individual performances
-        ##Integrate each species separately
-        #pbar = ProgressBar()
-        #print('Calculating individual performance of each strain')
-        #for i in pbar(range(s)):
-        #    #Eliminate all the reaction networks except the ith one. 
-        #    tspani = tuple([1, 100])
-        #    network_ni = [(network_n[i])]
-        #    Etai = Eta[i].reshape(1,m,m)
-        #    q_m = [np.array(q_max[i])]
-        #    kri = [np.array(kr[i])]
-        #    ksi = [np.array(ks[i])]
-        #    gi = np.array([g[i]])
-        #    mi = np.array([maintenance_n[i]])
-        #    N0i = 1*[2]
-        #    z0i = N0i + C0
-        #    sol = solve_ivp(lambda t,z: model(t,z,1,m,kappa,gamma,network_ni,
-        #                    mu,Etai,q_m,ksi,kri,gi,mi), tspani, z0i, 
-        #                    method = 'BDF', atol = 1e-3)
-        #    z = sol.y
-        #    K[n,i] = z[0][-1]
+        #Get individual performance of each species
+        #Initialize vector of individual performances
+        #Integrate each species separately
+        pbar = ProgressBar()
+        print('Calculating individual performance of each strain')
+        for i in pbar(range(s)):
+            #Eliminate all the reaction networks except the ith one. 
+            tspani = tuple([1, 2])
+            network_ni = [(network_n[i])]
+            Etai = Eta[i].reshape(1,m,m)
+            q_m = [np.array(q_max[i])]
+            kri = [np.array(kr[i])]
+            ksi = [np.array(ks[i])]
+            gi = np.array([g[i]])
+            mi = np.array([maintenance_n[i]])
+            N0i = 1*[2]
+            z0i = N0i + C0
+            sol = solve_ivp(lambda t,z: model(t,z,1,m,kappa,gamma,network_ni,
+                            mu,Etai,q_m,ksi,kri,gi,mi), tspani, z0i, 
+                            method = 'BDF', atol = 1e-3)
+            z = sol.y
+            K[n,i] = z[0][-1]
 
         #Integrate the whole community
+        print('Integrating whole community')
         sol = solve_ivp(lambda t,z: model(t,z,s,m,kappa,gamma,network_n,mu,Eta,
                         q_max,ks,kr,g,maintenance_n), tspan, z0, 
                         method = 'BDF', atol = 1e-3)
@@ -193,7 +193,7 @@ def main(argv):
     #Create dataframe of stable community compositions
     df_stable = pd.DataFrame(zn_stable)
     #Create a dataframe of individual performances
-    #df_performance = pd.DataFrame(K)
+    df_performance = pd.DataFrame(K)
     #Save
     df_sol.to_csv('../data/time_series.csv')
     df_network.to_csv('../data/network.csv')

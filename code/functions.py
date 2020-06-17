@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.integrate import solve_ivp, odeint
 import matplotlib.pyplot as plt
+import networkx as nx
 
 global R; R = 8.314462618 # J/(K mol)
 global DeltaGATP; DeltaGATP = 75e3 # J/mol
@@ -115,6 +116,31 @@ def network(m, n_reac, s = 1):
     network = np.unique(network, axis = 1)
     return tuple(network)
 
+def networks2community(networks, abundances, s, m):
+    '''
+    Transform a list of tuples into adjacency matrices and sum them weighted
+    by abundances
+
+    Parameters: 
+        networks (list of tuples): List of s tuples storing reaction network of
+                                   each strain.
+        abundances (1xs array): Array with abundance of each strain.
+
+    '''
+
+    #Initialize s mxm matrices to store weighted adjacency matrix of each 
+    #reaction network
+    network_adj = np.zeros(shape = (s, m, m))
+    for j in range(len(networks)):
+        network_adj[j][networks[j]] = abundances[j]
+    #Add up all networks to form the community adjacency matrix
+    community_adj = np.sum(network_adj, axis = 0)
+    community_nx = nx.from_numpy_matrix(community_adj, 
+                                        create_using = nx.DiGraph)
+    return community_nx
+
+
+
 def model(t, z, s, m, kappa, gamma, networks, mu, Eta, q_max, ks, kr, g, maint):
     '''
     Implementation of Jacob Cook's model.
@@ -208,3 +234,22 @@ def model(t, z, s, m, kappa, gamma, networks, mu, Eta, q_max, ks, kr, g, maint):
     dzdt = dNdt + dCdt
 
     return dzdt 
+
+#def coalescence(C1, C2):
+#    '''Perform a coalescence event between communities C1 and C2'''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

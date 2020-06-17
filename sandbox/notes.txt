@@ -131,3 +131,35 @@ What I want to do this week: Start performing community coalescence events and r
 Check why my analysis.R script is failing to plot all communities!!
 
 Can I make my reaction network generator a faster one?
+
+
+Jun 16,2020
+
+So currently, when I randomly choose 5 species (ie, pick a reaction network with N_reac = unif(1, 45), and bring the system to equilibrium, generalists remain at equilibrium more frequently than specialists. Since the best equilibrium is that reached when all resources are depleted simultaneously most efficiently, to beat a generalist we need many specialists that cover the same niche breadth. The problem is that since I am only sampling 5 species, it is very unlikely to draw 5 specialists. This problem can be solved in two ways:
+	If he pool of competing species is complete (I include in the system all the posible reaction networks), in which case, since I am not including randomness at any point (all reaction network have been sampled), the solution is unique, and no preference would be given to generalists over specialists. However, this seems computationally fucked up
+	If I limit, like you did, the number of reaction networks to a very low one. However, this seems unjustified.
+
+Plan for this week: 
+	1. Implement a measure of individual fitness based on the initial growth rate
+	2. Calculat F numerically as sum_i log(R_i/T_i)
+	3. Calculate cohesion of a community.
+	4. Calculate the total flux (degree) of the network
+
+Step 2 is completed. I verified that the quantity F is minimized under the given dynamics.
+
+Before going into steps 3 and 4, I am going to program the coalescent communities. 
+
+Depending on the power of the tradeoff in my  cost model I get different number of reaction networks at equilibrium. 
+
+Tomorrow, I need to adress: why are some F still 0? How are those communities?
+
+Jun 17,2020
+
+I have programed the coalescent communities. I find that for one pair of communities, one goes extinct and the other one survives. This is a phenomenon that I would not be surprised to find in most of the communitiy coalescences. 
+
+I neet to investigate the F's still, and calculate the total flux (degree) of the network, and workout the units.
+Make one community coalesce, iteratively, and record F. See if it increases
+What about the correlations??
+What measures of cohesion do we have?
+
+
