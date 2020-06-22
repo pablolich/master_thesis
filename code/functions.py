@@ -3,6 +3,7 @@ from scipy.integrate import solve_ivp, odeint
 import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
+from itertools import combinations
 
 global R; R = 8.314462618 # J/(K mol)
 global DeltaGATP; DeltaGATP = 75e3 # J/mol
@@ -368,3 +369,130 @@ def rate_matrix(network, Eta, q_max, ks, kr, C, mu, m):
     #Include reaction rates in reaction network matrix
     r[network] = q_reac
     return r
+
+def cooperation_index(adj_matrix):
+    '''
+    Calculate the cooperation index from the adjacency matrix
+
+    Parameters: 
+        
+        adj_matrix (mxm array): adjacency matrix
+
+    Returns:
+         
+        coop_idx (float): Cooperation index. A measure of how similar is the 
+                          adjacency matrix to a matrix where all the rows have 
+                          none or one non-zero element.
+    '''
+    #Get dimension of matrix
+    dimension = len(adj_matrix)
+    #Prealocate cooperation index vector for adjacency matrix rows
+    coop_ind_vec = np.zeros(dimension)
+    #Loop through rows of matrix
+    for i in range(dimension):
+        #Number of non_zero elements
+        non_zero = sum(np.nonzero(adj_matrix[i,:]))
+        #Set cooperation row index to 0 if all elements are 0
+        if  non_zero == 0:
+            coop_ind_vec[i] = 0
+        else:
+            #Calculate an index of cooperation
+            coop_ind_vec[i] = 1 - non_zero/dimension
+    coop_idx = mean(coop_ind_vec)
+    return coop_idx
+
+def facilitation_index(networks):
+    '''
+    Calculate the facilitation index from the adjacency matrix, a measure of 
+    how similar is the adjacency matrix to a matrix where all the rows have 
+    none or one non-zero element.
+
+    Parameters: 
+        
+        networks (list of tuples of arrays): networks of strains in the
+                                             community.
+
+    Returns:
+         
+        facilitation_idx (float)
+     '''
+
+    #Get number of strains
+    s = len(networks)
+    #Get all pairs of species
+    all_pairs = list(combinations(s, 2))
+    #Prealocate competition index vector
+    facilitation_idx = np.zeros(len(all_pairs))
+    #Loop through every possible pair of species
+    comp_j = 0
+    for i in pairs:
+        #Get reaction network of pair i
+        reac_1 = networks[i[0]]
+        reac_2 = networks[i[1]]
+
+        #Facilitation degre 1--->2
+        #Get used substrates by 1 and used products by 2
+        substrates_1 = np.unique(reac_1[0])
+        products_2 = np.unique(reac_2[1])
+        #Get shared elements
+        shared = np.intersect1d(substrates_1, products_2)
+        #Facilitation degree
+        1_2 = len(shared)
+
+        #Facilitation degre 2--->1
+        #Get used substrates by 1 and used products by 2
+        substrates_2 = np.unique(reac_2[0])
+        products_1 = np.unique(reac_1[1])
+        #Get shared elements
+        shared = np.intersect1d(substrates_1, products_2)
+        #Facilitation degree
+        2_1 = len(shared)
+
+        #The sum of each facilitation degrees is the mutual facilitation degree
+        facilitation_idx[comp_j] = (1_2 + 2_1)/(2*(m-2))
+        #Note that the denominator normalizes it to one
+        comp_j +=1
+
+    #The community facilitation degree can be calculated by averaging the 
+    #facilitation degrees of all posible competing species
+
+    return mean(facilitation_idx)
+
+def autofacilitation_index(neworks):
+    '''
+    Calcualte autofacilitation index, a measure of how many elements are both 
+    substrates and products in the reaction network of a given strain
+    '''
+
+    #Get number of strains
+    s = len(networks)
+    #Preallocate vector of autofacilitation indexes
+    auto_idx = np.zeros(s)
+    #Loop through strains
+    for i in range(s):
+        #Facilitation degree
+        substrates = np.unique(neworks[i][0])
+        products = np.unique(networks[i][1])
+        shared = np.intersect1d(substrates, products)
+        #Calculate autofacilitation index for strain i
+        auto_idx[i] = len(shared)/(comb(m, 2, exact = True)-(m-1))
+
+    return mean(auto_idx)
+    
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+        
+

@@ -175,3 +175,9 @@ I would like to impose a maximum on the favorable surplus due to having more rea
 Jun 20,2020
 
 It seems that lowering reaction number opens up for niche creation and increases richness.. although, maybe not.
+
+Jun 22,2020
+
+Should I weight my cooperation index by abundance?
+I am calculating the intrinsic and the pairwaise interaction. What does this remind me to? To a matrix! Can I organize a matrix of facilitations?????
+Tomorrow: debug and test
