@@ -1,0 +1,60 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage[right=20mm,left=20mm,top=20mm,bottom=20mm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[utf8x]{inputenc}
+\usepackage{graphicx}
+\graphicspath{{../../results/}}
+\usepackage{subcaption}
+\usepackage{caption}
+\usepackage{braket}
+
+\begin{document}
+	
+    \LARGE{\textbf{Research log summary}}\hfill\Large{June 22, 2020}
+    \section*{Aim}
+    	I would like to adress one of these two questions (or both if I have time):\\
+    	\begin{itemize}
+    		\item Precict the outcome (what community will dominate, and in what proportion) of the coalescence of two communities when mutualisms are considered.
+    		\item Will members of communities with a history of coalescence have a higher persistence up on interaction with a 'naive' community?\\
+    	\end{itemize}
+    	
+    \section*{Progress}
+		\begin{itemize}
+			\item Implemented simulation of a coalescence event.
+			\item Calculated more candidates to predict coalescence output (initial growth rate, F)
+			\item Simulated 1000 communities and performed coalescence events of all possible pairs of the same richness (avoid selection effects)
+			\item When C1 coalesces with C2, the community outcome is C. The similarity of C1 and C was calculated as the normalized scallar product of their species abundance vector.
+			\begin{equation}
+				S(C_1, C) = \frac{\vec{s_1} \cdot \vec{s}}{\sqrt{|\vec{s_1}|}\sqrt{|\vec{s}|}}
+			\end{equation}
+			Plotting fitness difference $ \Delta F = F  -  F_1 $ versus the similarity, shows that F is not a good predictor of the coalescence outcome in communities where mutualisms exist.
+			\begin{figure}[h]
+				\centering
+				\includegraphics[width=0.6\linewidth]{similarity_fitness.pdf}
+				\caption{Fitness difference versus similarity between each pair of competing communities.}
+				\label{fitness_similarity}
+			\end{figure}
+			\item Histogramed similarity and found that 0 and 1 are the most common cases. This is what I expected, since including mutualisms makes the community a more cohesive unit, so that when it competes with another one, most of the times the outcome is one of the pure communities, and a perfect mixing ($ S = 0.5 $) is the least likely option.
+			\begin{figure}[h]
+				\centering
+				\includegraphics[width = 0.5\linewidth]{similarity_hist.pdf}
+				\caption{Similarity histogram for each coalescence event}
+			\end{figure}
+			
+    		\end{itemize}
+    	\section*{Next steps}
+		    \begin{itemize}
+		    	\item Record more candidates for predictor of community coalescence outcome: Total flux (un-weighted), community cohesion, and flux per metabolite.
+		    	\item Check for correlations between similarity and each of the candidates.
+		    \end{itemize}
+    \section*{Questions}
+    	\begin{itemize}
+    		\item Any other predictors you can think of?
+    		\item Is the community cohesion measure a promising option?
+    	\end{itemize}
+
+
+	
+		
+		
+\end{document}

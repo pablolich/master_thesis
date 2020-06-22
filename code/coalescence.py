@@ -8,7 +8,6 @@ __version__ = '0.0.1'
 
 import sys
 from functions import *
-from integration import uniform_pack
 from scipy.special import comb
 from progressbar import ProgressBar
 import pandas as pd
@@ -70,11 +69,13 @@ def main(argv):
     #place)
     N_reac = comb(m, 2, exact = True)
     #Perform n_simul simulations
-    n_simul = 140
+    n_simul = 1000
     #Generate reaction network for each strain
     tot = s*n_simul
     n_reac_s = np.zeros(tot, dtype = 'int')
     maintenance = np.zeros(tot)
+    #Prealocate vector for storing initial resource surpluses
+    surplus = np.zeros(tot)
     #Prealocate container of all networks 
     tot_reac_network = tot*[0]
     pbar = ProgressBar()
@@ -114,6 +115,7 @@ def main(argv):
     empty_deg = [[] for i in range(m)]
     zn = np.array(empty_z)
     zn_stable = np.zeros(shape = (n_simul, m+s))
+    Fn_stable = np.zeros(n_simul)
     degree_n = np.array(empty_deg)
     betweenness_n = np.array(empty_deg)
     F_n = np.array([])
@@ -128,6 +130,22 @@ def main(argv):
         #Maintenance vector
         maintenance_n = maintenance[s*n:s*(n+1)]
         #Integrate the whole community
+        #Calculate possible measures of performance of the network prior to 
+        #its realization
+        #Calculate initial surplus of species in the network
+        #Get s matrices of zeros: reaction presence/absence for each strain
+        rates = np.zeros(shape = (s,m,m))
+        #Calculate initial surplus for each strain given environment C0
+        for j in range(s):
+            network_t = network_n[j];
+            eta = Eta[j]
+            q_m = q_max[j]
+            k_s = ks[j]
+            k_r = kr[j]
+            rates[j] = rate_matrix(network_t, eta, q_m, k_s, k_r, np.array(C0),
+                                   mu, m)
+            surplus[s*n + j] = jgrow(rates[j], eta) - maintenance_n[j]
+         
         sol = solve_ivp(lambda t,z: model(t,z,s,m,kappa,gamma,network_n,mu,Eta,
                         q_max,ks,kr,g,maintenance_n), tspan, z0, 
                         method = 'BDF', atol = 1e-3)
@@ -141,29 +159,17 @@ def main(argv):
         degree_time = np.zeros(shape=(m, t_points))
         betweenness_time = np.zeros(shape=(m, t_points))
         F = np.zeros(t_points)
-        for i in range(t_points):
-            #Don't worry about divergent cases
-            if any(z[:, -1]>1e4):
-                pass
-            else:
+        #Don't worry about divergent cases
+        if any(z[:, -1]>1e4):
+            pass
+        else:
+            F = F_calculator(z, t, m, s, network_n)
+            for i in range(t_points):
                 #Abundance of each strain at timepoint i
                 abundances = z[0:s,i]
-                #Metabolite concentrations at timepoint i
-                concentrations = z[s:s+m, i]
-                #Number of individuals demanding each resource at timepoint i
-                sub = [int(round(abundances[p]))*list(network_n[p][0]) for 
-                        p in range(s)]
-                flat_sub = [item for sublist in sub for item in sublist]
-                #Get frequency of consumption of each metabolite
-                T = np.bincount(flat_sub)
-                #Identify metabolites that are not being consumed at all
-                missing = np.setxor1d(np.array(flat_sub), np.arange(m))
-                #Remove unused metabolites from vector of concentrations
-                R = np.delete(concentrations, missing)
-                #Calculate efficiency in simultaneous depletion
-                F[i] = sum(np.log(abs(R)/T))
                 #Community networkx for those abundances
-                community_network = networks2community(network_n, abundances, s, m) 
+                community_network = networks2community(network_n, abundances, 
+                                                       s, m) 
                 G = community_network 
                 layout = nx.circular_layout(G)
                 #Calculate size of edges (importance of metabolites)
@@ -184,10 +190,11 @@ def main(argv):
         #Store
         zn = np.concatenate([zn, z], axis = 1)
         zn_stable[n,:] = zn[:,-1]
+        F_n = np.concatenate([F_n, F])
+        Fn_stable[n] = F_n[-1]
         degree_n = np.concatenate([degree_n, degree_time], axis = 1)
         betweenness_n = np.concatenate([betweenness_n, betweenness_time],
                                        axis = 1)
-        F_n = np.concatenate([F_n, F])
         tn = np.concatenate([tn, t])
         n_label = np.concatenate([n_label, n*np.ones(len(t), dtype = int)])
         
@@ -195,9 +202,10 @@ def main(argv):
     #Create dataframe of networks
     df_network = pd.DataFrame(tot_reac_network, 
                               columns = ['substrate', 'product'])
-    df_network = pd.concat([df_network, pd.DataFrame(maintenance, 
-                                                     columns = ['maintenance'])],
-                           axis = 1)
+    df_network = pd.concat([df_network, 
+                            pd.DataFrame({'maintenance':maintenance, 
+                                          'surplus':surplus,
+                                          'n_reac':n_reac_s})], axis = 1)
     df_network.insert(0, 'strain', np.tile(np.arange(s), n_simul))
     df_network.insert(0, 'n_simulation', np.repeat(np.arange(n_simul), s))
     #Create dataframe of time series solutions
@@ -214,6 +222,9 @@ def main(argv):
     df_sol.insert(0, 'n_simulation', n_label)
     #Create dataframe of stable community compositions
     df_stable = pd.DataFrame(zn_stable, columns = cols)
+    df_stable = pd.concat([df_stable, pd.DataFrame(Fn_stable, 
+                                                   columns = ['F'])], 
+                          axis = 1)
     df_stable.insert(0, 'n_simulation', np.arange(n_simul))
     #Save
     df_sol.to_csv('../data/coal_time_series.csv')

@@ -2,6 +2,7 @@ import numpy as np
 from scipy.integrate import solve_ivp, odeint
 import matplotlib.pyplot as plt
 import networkx as nx
+import pandas as pd
 
 global R; R = 8.314462618 # J/(K mol)
 global DeltaGATP; DeltaGATP = 75e3 # J/mol
@@ -116,6 +117,18 @@ def network(m, n_reac, s = 1):
     network = np.unique(network, axis = 1)
     return tuple(network)
 
+def tuple2matrix(tuples, abundances, s, m):
+    '''Transform a list of tuples into adjacency matrices''' 
+    #Initialize s mxm matrices to store weighted adjacency matrix of each 
+    #reaction network
+    network_adj = np.zeros(shape = (s, m, m))
+    #Transform tuples to matrices
+    for j in range(len(tuples)):
+        network_adj[j][tuples[j]] = abundances[j]
+    return network_adj
+
+
+
 def networks2community(networks, abundances, s, m):
     '''
     Transform a list of tuples into adjacency matrices and sum them weighted
@@ -127,12 +140,7 @@ def networks2community(networks, abundances, s, m):
         abundances (1xs array): Array with abundance of each strain.
 
     '''
-
-    #Initialize s mxm matrices to store weighted adjacency matrix of each 
-    #reaction network
-    network_adj = np.zeros(shape = (s, m, m))
-    for j in range(len(networks)):
-        network_adj[j][networks[j]] = abundances[j]
+    network_adj = tuple2matrix(networks, abundances, s, m)
     #Add up all networks to form the community adjacency matrix
     community_adj = np.sum(network_adj, axis = 0)
     community_nx = nx.from_numpy_matrix(community_adj, 
@@ -235,21 +243,128 @@ def model(t, z, s, m, kappa, gamma, networks, mu, Eta, q_max, ks, kr, g, maint):
 
     return dzdt 
 
-#def coalescence(C1, C2):
-#    '''Perform a coalescence event between communities C1 and C2'''
+def F_calculator(z, t, m, s, net):
+    '''Calculate F = -log(R/T)'''
+    t_points = len(t)
+    #Create community network and evaluate centrality measures for each
+    #timepoint
+    F = np.zeros(t_points)
+    for i in range(t_points):
+        #Don't worry about divergent cases
+        if any(z[:, -1]>1e4):
+            pass
+        else:
+            #Abundance of each strain at timepoint i
+            abundances = z[0:s,i]
+            #Metabolite concentrations at timepoint i
+            concentrations = z[s:s+m, i]
+            #Number of individuals demanding each resource at timepoint i
+            sub = [int(round(abundances[p]))*list(net[p][0]) for 
+                    p in range(s)]
+            flat_sub = [item for sublist in sub for item in sublist]
+            #Get frequency of consumption of each metabolite
+            T = np.bincount(flat_sub)
+            #Remove 0 from T
+            T = T[T != 0]
+            #Identify metabolites that are not being consumed at all
+            missing = np.setxor1d(np.array(flat_sub), np.arange(m))
+            #Remove unused metabolites from vector of concentrations
+            R = np.delete(concentrations, missing)
+            #Calculate efficiency in simultaneous depletion
+            F[i] = sum(np.log(abs(R)/T))
+    return F
 
+def coalescence_event(C1, C2, m, s):
+    '''Perform the coalescence of two communities'''
 
+    #Put together both communities
+    mixed = pd.concat([C1, C2]).reset_index(drop = True)
 
+    #Get parameters for integration
+    #Obtain reaction networks as a list of tuples
+    nets = [tuple([mixed.loc[i, ['substrate']][0],
+                   mixed.loc[i, ['product']][0]]) for i in range(len(mixed))]
+    #Choose Eta matrix for each strain
+    Eta = 0.5*np.ones(shape = (s,m,m))
+    diag_ind = np.diag_indices(m)
+    for i in range(s):
+        Eta[i][diag_ind] = 0
+    q_m = [np.ones(1) for i in range(s)]
+    ks = [0.1*q_m[i] for i in range(s)]
+    kr = [10*q_m[i] for i in range(s)]
 
+    #Initial conditions                
+    z0 = list(mixed['stable.state']) + m*[0]
 
+    #Timespan
+    tspan = tuple([1, 1e5])
 
+    #Integrate model
+    sol = solve_ivp(lambda t,z: model(t, z, s = len(mixed), m = m, 
+                                      kappa = 2*np.ones(m), 
+                                      gamma = 1*np.ones(m), 
+                                      networks = nets, 
+                                      mu = uniform_pack(E, m), 
+                                      Eta = Eta, 
+                                      q_max = q_m, 
+                                      ks = ks, 
+                                      kr = kr,
+                                      g = np.ones(s),
+                                      maint = np.array(mixed['maintenance'])),
+                    tspan, z0, method = 'BDF', atol = 1e-3)
 
+    #Unpack results
+    t = sol.t
+    z = sol.y
 
+    #Calculate fitness of new community
+    F = F_calculator(z, t, m, s, nets)
 
+    return t, z, F
 
+def random_pack(E, m):
+    '''Generate random uniformly distributed chemical potentials'''
+    #Pack total energy into m intervals (chemical potentials of metabolites)
+    pack = np.random.uniform(E, size = m)
+    #Sort decreasingly 
+    mu = np.sort(pack)[::-1]
+    #Fix first and last chemical potentials
+    mu[0] = E 
+    mu[-1] = 0
+    return mu
 
+def uniform_pack(E, m):
+    '''Generate equidistant chemical potentials'''
+    return np.linspace(E,0,m)
 
+def rate_matrix(network, Eta, q_max, ks, kr, C, mu, m):
+    '''Calculate matrix of reaction rates'''
 
-
-
-
+    #Initialize matrix of rates
+    r = np.zeros(shape=(m,m))
+    #Get concentrations from those metabolites taking part in reaction 
+    #network 
+    S = C[network[0]]
+    P = C[network[1]]
+    #Get chemical potentials of those metabolites
+    mu_S = mu[network[0]]
+    mu_P = mu[network[1]]
+    #Gibs free energy change is the difference between chemical 
+    #potentials (stechiometric coefficients are all 1)
+    DeltaG = mu_P - mu_S
+    #Get etas for reaction network
+    eta = Eta[network]
+    #Calculate equilibrium constant
+    Keq = K_equilibrium(DeltaG, eta, DeltaGATP, R, T)
+    #Calculate reaction quotients
+    Q = r_quotient(S, P, Keq)
+    #Calculate thetas
+    theta = Theta(Q, Keq)
+    #Calculate rates
+    q_reac = rate(q_max, theta, ks, kr, S)
+    #Turn nans to 0
+    nans = np.isnan(q_reac)
+    q_reac[nans] = 0
+    #Include reaction rates in reaction network matrix
+    r[network] = q_reac
+    return r

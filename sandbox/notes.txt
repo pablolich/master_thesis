@@ -162,4 +162,16 @@ Make one community coalesce, iteratively, and record F. See if it increases
 What about the correlations??
 What measures of cohesion do we have?
 
+Jun 18,2020
 
+I have verified that the system is deterministic, ie, the equilibrium doesn't depend on the initial conditions.
+
+delF doesn't seem to predict well the similarity of the outcome of the community. Let me check that things are working by examining the plot of abundances when similarity is about 0.6, and then I will start working in cohesion...
+
+Jun 19,2020
+
+I would like to impose a maximum on the favorable surplus due to having more reactions. There is a point where the
+
+Jun 20,2020
+
+It seems that lowering reaction number opens up for niche creation and increases richness.. although, maybe not.

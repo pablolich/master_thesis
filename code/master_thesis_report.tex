@@ -1,0 +1,40 @@
+\documentclass[titlepage,11pt]{article}
+\usepackage{graphicx} %To include figures
+\graphicspath{{../Results/}}
+\usepackage{lineno} % To count lines
+\usepackage{setspace} %To change line spacing
+\usepackage{cite} % To cite
+\usepackage{amsmath}
+\usepackage[paper=a4paper,margin=1in]{geometry}
+
+\newcommand{\wordcount}{\input{count2.sum}} %Word counting
+
+\doublespacing
+
+
+\begin{document}
+	
+	\title{\textbf{Master thesis title} }
+	\author{Pablo Lechón Alonso \\ [30pt]
+		Imperial College London}
+	\date{Word count: \wordcount}%We don't want to show the date
+	\maketitle
+	
+	\newgeometry{top=1.5in,bottom=1.5in,right=1.5in,left=1.5in} %Change geometry
+	
+	\begin{abstract}
+	
+	\end{abstract}
+	
+	\tableofcontents
+	\newpage
+	
+	\begin{linenumbers}
+		\section{Introduction}
+			
+	\end{linenumbers}
+		
+		\newpage
+		\bibliographystyle{unsrt}
+		\bibliography{/Users/pablolechon/library}
+	\end{document}

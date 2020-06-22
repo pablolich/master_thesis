@@ -33,20 +33,6 @@ def labels(i, j):
     label['strain'] = ind[:,1]
     return label
 
-def random_pack(E, m):
-    '''Generate random uniformly distributed chemical potentials'''
-    #Pack total energy into m intervals (chemical potentials of metabolites)
-    pack = np.random.uniform(E, size = m)
-    #Sort decreasingly 
-    mu = np.sort(pack)[::-1]
-    #Fix first and last chemical potentials
-    mu[0] = E 
-    mu[-1] = 0
-    return mu
-
-def uniform_pack(E, m):
-    '''Generate equidistant chemical potentials'''
-    return np.linspace(E,0,m)
 
 def main(argv):
     '''Integrate model for a set of arbitrary parameters'''
