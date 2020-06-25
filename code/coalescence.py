@@ -45,9 +45,9 @@ def main(argv):
     #Number of metabolites
     m = 10
     #Number of strains
-    s = 10
+    s = 1000
     #Generate random uniformly distributed chemical potentials
-    mu = uniform_pack(E, m)
+    mu = decreasing_pack(E, m)
     #Set growth proportionality constant
     g = np.ones(s) 
     #Set supply and dilution rate of metabolites
@@ -69,13 +69,25 @@ def main(argv):
     #place)
     N_reac = comb(m, 2, exact = True)
     #Perform n_simul simulations
-    n_simul = 1000
+    n_simul = 10
     #Generate reaction network for each strain
     tot = s*n_simul
     n_reac_s = np.zeros(tot, dtype = 'int')
     maintenance = np.zeros(tot)
     #Prealocate vector for storing initial resource surpluses
     surplus = np.zeros(tot)
+    #Prealocate vector for storing cohesion indices
+    cohesion = np.zeros(tot)
+    #Prealocate vector for storing facilitation indices
+    facilitation = np.zeros(tot)
+    #Prealocate vector for storing facilitation indices
+    providing = np.zeros(tot)
+    #The corrected version
+    cohesion_corrected = np.zeros(tot)
+    #Prealocate vector for storing competition indices
+    competition = np.zeros(tot)
+    #Prealocate vector for storing auto_cohesion indices
+    auto_cohesion = np.zeros(tot)
     #Prealocate container of all networks 
     tot_reac_network = tot*[0]
     pbar = ProgressBar()
@@ -86,7 +98,7 @@ def main(argv):
         np.random.seed(i)
         #while num_reac == 0: 
         #    num_reac = round(np.random.beta(1,5)*N_reac)
-        num_reac = np.random.randint(1, N_reac+1)
+        num_reac = np.random.randint(1, m+1)#,N_reac+1)
         #Get reaction network
         reac_network = network(m, num_reac)
         #Store reaction network 
@@ -145,6 +157,28 @@ def main(argv):
             rates[j] = rate_matrix(network_t, eta, q_m, k_s, k_r, np.array(C0),
                                    mu, m)
             surplus[s*n + j] = jgrow(rates[j], eta) - maintenance_n[j]
+        #Calculate level of cohesion of each species
+        cohesion_matrix = facilitation_matrix(network_n, m)
+        #Providing index
+        providing_index = np.sum(cohesion_matrix, axis = 0)
+        #Facilitation index
+        facilitation_index = np.sum(cohesion_matrix, axis = 1)
+        #Auto cohesion indices
+        auto_cohesion_indices = np.diag(cohesion_matrix)
+        cohesion_indices = cooperation_index(cohesion_matrix)
+        coh_ind_corr = cohesion_indices - n_reac_s[s*n:s*(n+1)] + auto_cohesion_indices
+        #Calculate the level of competition of each species
+        comp_mat = competition_matrix(network_n, m)
+        comp_indices = sum(comp_mat)
+        #Store cohesion, autocohesion and competition indices
+        cohesion[s*n:s*(n+1)] = cohesion_indices
+        facilitation[s*n:s*(n+1)] = facilitation_index
+        providing[s*n:s*(n+1)] = providing_index
+        cohesion_corrected[s*n:s*(n+1)] = coh_ind_corr
+        competition[s*n:s*(n+1)] = comp_indices
+        auto_cohesion[s*n:s*(n+1)] = auto_cohesion_indices
+
+        
          
         sol = solve_ivp(lambda t,z: model(t,z,s,m,kappa,gamma,network_n,mu,Eta,
                         q_max,ks,kr,g,maintenance_n), tspan, z0, 
@@ -202,10 +236,18 @@ def main(argv):
     #Create dataframe of networks
     df_network = pd.DataFrame(tot_reac_network, 
                               columns = ['substrate', 'product'])
+    
     df_network = pd.concat([df_network, 
                             pd.DataFrame({'maintenance':maintenance, 
                                           'surplus':surplus,
-                                          'n_reac':n_reac_s})], axis = 1)
+                                          'n_reac':n_reac_s, 
+                                          'cohesion':cohesion,
+                                          'providing':providing,
+                                          'facilitation':facilitation,
+                                          'cohesion_corr':cohesion_corrected,
+                                          'competition':competition,
+                                          'autocohesion':auto_cohesion})], 
+                            axis = 1)
     df_network.insert(0, 'strain', np.tile(np.arange(s), n_simul))
     df_network.insert(0, 'n_simulation', np.repeat(np.arange(n_simul), s))
     #Create dataframe of time series solutions

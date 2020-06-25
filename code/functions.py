@@ -3,7 +3,8 @@ from scipy.integrate import solve_ivp, odeint
 import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
-from itertools import combinations
+from itertools import combinations, product, permutations
+from scipy.special import comb
 
 global R; R = 8.314462618 # J/(K mol)
 global DeltaGATP; DeltaGATP = 75e3 # J/mol
@@ -283,8 +284,9 @@ def coalescence_event(C1, C2, m, s):
 
     #Get parameters for integration
     #Obtain reaction networks as a list of tuples
-    nets = [tuple([mixed.loc[i, ['substrate']][0],
-                   mixed.loc[i, ['product']][0]]) for i in range(len(mixed))]
+    substrates = mixed['substrate']
+    products = mixed['product']
+    nets = vector2tuple(substrates, products)
     #Choose Eta matrix for each strain
     Eta = 0.5*np.ones(shape = (s,m,m))
     diag_ind = np.diag_indices(m)
@@ -318,10 +320,7 @@ def coalescence_event(C1, C2, m, s):
     t = sol.t
     z = sol.y
 
-    #Calculate fitness of new community
-    F = F_calculator(z, t, m, s, nets)
-
-    return t, z, F
+    return t, z, nets
 
 def random_pack(E, m):
     '''Generate random uniformly distributed chemical potentials'''
@@ -337,6 +336,17 @@ def random_pack(E, m):
 def uniform_pack(E, m):
     '''Generate equidistant chemical potentials'''
     return np.linspace(E,0,m)
+
+def second_order_polynomial(x):
+    return(-x**2)
+
+def decreasing_pack(E, m):
+    '''Generate quadraticaly decreasing chemical potentials'''
+    x = np.linspace(0,1,m)
+    distances = second_order_polynomial(x)+1
+    d_norm = E*distances/sum(distances)
+    mu = [E - sum(d_norm[0:i]) for i in range(len(d_norm))]
+    return np.array(mu)
 
 def rate_matrix(network, Eta, q_max, ks, kr, C, mu, m):
     '''Calculate matrix of reaction rates'''
@@ -370,95 +380,116 @@ def rate_matrix(network, Eta, q_max, ks, kr, C, mu, m):
     r[network] = q_reac
     return r
 
-def cooperation_index(adj_matrix):
-    '''
-    Calculate the cooperation index from the adjacency matrix
+#def cooperation_index(adj_matrix):
+#    '''
+#    Calculate the cooperation index from the adjacency matrix
+#
+#    Parameters: 
+#        
+#        adj_matrix (mxm array): adjacency matrix
+#
+#    Returns:
+#         
+#        coop_idx (float): Cooperation index. A measure of how similar is the 
+#                          adjacency matrix to a matrix where all the rows have 
+#                          none or one non-zero element.
+#    '''
+#    #Get dimension of matrix
+#    dimension = len(adj_matrix)
+#    #Prealocate cooperation index vector for adjacency matrix rows
+#    coop_ind_vec = np.zeros(dimension)
+#    #Loop through rows of matrix
+#    for i in range(dimension):
+#        #Number of non_zero elements
+#        non_zero = sum(np.nonzero(adj_matrix[i,:]))
+#        #Set cooperation row index to 0 if all elements are 0
+#        if  non_zero == 0:
+#            coop_ind_vec[i] = 0
+#        else:
+#            #Calculate an index of cooperation
+#            coop_ind_vec[i] = 1 - non_zero/dimension
+#    coop_idx = mean(coop_ind_vec)
+#    return coop_idx
 
-    Parameters: 
+def facilitation_matrix(networks, m):
+    '''Create facilitation matrix'''
+    
+    #Get number of strains
+    s = len(networks)
+    #Get matrix indices (species pairs)
+    pairs = product(range(s), repeat = 2)
+    #Preallocate facilitation matrix
+    fac_mat = np.zeros(shape=(s,s))
+    for i, j in pairs:
+        ##Initialize sign of interaction for iteration i,j
+        #sign = 1
+        #Get products of species i and used substrates by species j
+        sub_i = np.unique(networks[i][1])
+        prod_j = np.unique(networks[j][0])
+        #Get shared elements
+        shared = np.intersect1d(sub_i, prod_j)
+        ##Autofacilitation is cheating
+        #if i==j:
+        #    sign = 0#-1
+        #Facilitation degree between species i and j
+        fac_mat[i,j] = len(shared)#*sign
+
+    return fac_mat
+
+def competition_matrix(networks, m):
+    '''Create competition matrix'''
+    
+    #Get number of strains
+    s = len(networks)
+    #Get matrix indices (species pairs)
+    pairs = permutations(range(s), 2)
+    #Preallocate facilitation matrix
+    comp_mat = np.zeros(shape=(s,s))
+    for i, j in pairs:
+        #Get used substrates by species i and products used by species j
+        sub_i = np.unique(networks[i][0])
+        sub_j = np.unique(networks[j][0])
+        #Get shared elements
+        shared = np.intersect1d(sub_i, sub_j)
+        #Facilitation degree between species i and j
+        comp_mat[i,j] = len(shared)
+
+    return comp_mat
+
+def individual_fitness(_in, out_, competition):
+    return (_in - out_)/competition
+    
+def cooperation_index(cooperation_matrix):
+    '''
+    Calculate the cooperation index from the cooperation matrix. It is a 
+    measure of how overlapping the products of species are with the substrates
+    of others. 
+
+    Parameters:
         
-        adj_matrix (mxm array): adjacency matrix
+        cooperation_matrix (sxs array): Matrix of cooperation between all
+                                        possible pair of species
 
     Returns:
          
-        coop_idx (float): Cooperation index. A measure of how similar is the 
-                          adjacency matrix to a matrix where all the rows have 
-                          none or one non-zero element.
-    '''
-    #Get dimension of matrix
-    dimension = len(adj_matrix)
-    #Prealocate cooperation index vector for adjacency matrix rows
-    coop_ind_vec = np.zeros(dimension)
-    #Loop through rows of matrix
-    for i in range(dimension):
-        #Number of non_zero elements
-        non_zero = sum(np.nonzero(adj_matrix[i,:]))
-        #Set cooperation row index to 0 if all elements are 0
-        if  non_zero == 0:
-            coop_ind_vec[i] = 0
-        else:
-            #Calculate an index of cooperation
-            coop_ind_vec[i] = 1 - non_zero/dimension
-    coop_idx = mean(coop_ind_vec)
-    return coop_idx
-
-def facilitation_index(networks):
-    '''
-    Calculate the facilitation index from the adjacency matrix, a measure of 
-    how similar is the adjacency matrix to a matrix where all the rows have 
-    none or one non-zero element.
-
-    Parameters: 
-        
-        networks (list of tuples of arrays): networks of strains in the
-                                             community.
-
-    Returns:
-         
-        facilitation_idx (float)
+       cooperation_idx (float)
      '''
 
     #Get number of strains
-    s = len(networks)
-    #Get all pairs of species
-    all_pairs = list(combinations(s, 2))
-    #Prealocate competition index vector
-    facilitation_idx = np.zeros(len(all_pairs))
-    #Loop through every possible pair of species
-    comp_j = 0
-    for i in pairs:
-        #Get reaction network of pair i
-        reac_1 = networks[i[0]]
-        reac_2 = networks[i[1]]
+    s = len(cooperation_matrix)
+    cooperation_idx = np.zeros(s)
+    #Get autocooperation of each species
+    autocoop = np.diag(cooperation_matrix)
+    for i in range(s):
+        cooperation_idx[i] = sum(cooperation_matrix[i,:]) + \
+                             sum(cooperation_matrix[:,i]) + \
+                             2 * cooperation_matrix[i,i] 
+    return cooperation_idx
 
-        #Facilitation degre 1--->2
-        #Get used substrates by 1 and used products by 2
-        substrates_1 = np.unique(reac_1[0])
-        products_2 = np.unique(reac_2[1])
-        #Get shared elements
-        shared = np.intersect1d(substrates_1, products_2)
-        #Facilitation degree
-        1_2 = len(shared)
+def competition_index(comp_matrix):
+    return sum(comp_matrix)
 
-        #Facilitation degre 2--->1
-        #Get used substrates by 1 and used products by 2
-        substrates_2 = np.unique(reac_2[0])
-        products_1 = np.unique(reac_1[1])
-        #Get shared elements
-        shared = np.intersect1d(substrates_1, products_2)
-        #Facilitation degree
-        2_1 = len(shared)
-
-        #The sum of each facilitation degrees is the mutual facilitation degree
-        facilitation_idx[comp_j] = (1_2 + 2_1)/(2*(m-2))
-        #Note that the denominator normalizes it to one
-        comp_j +=1
-
-    #The community facilitation degree can be calculated by averaging the 
-    #facilitation degrees of all posible competing species
-
-    return mean(facilitation_idx)
-
-def autofacilitation_index(neworks):
+def autofacilitation_index(networks, m):
     '''
     Calcualte autofacilitation index, a measure of how many elements are both 
     substrates and products in the reaction network of a given strain
@@ -471,28 +502,34 @@ def autofacilitation_index(neworks):
     #Loop through strains
     for i in range(s):
         #Facilitation degree
-        substrates = np.unique(neworks[i][0])
+        substrates = np.unique(networks[i][0])
         products = np.unique(networks[i][1])
         shared = np.intersect1d(substrates, products)
         #Calculate autofacilitation index for strain i
         auto_idx[i] = len(shared)/(comb(m, 2, exact = True)-(m-1))
 
-    return mean(auto_idx)
+    return np.mean(auto_idx)
     
+def vector2tuple(substrate, product):
+    '''
+    Transform a matrix of substrates and products for a community into a 
+    list of tuples of arrays
 
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
+    Parameters:
         
+        substrate (Pandas.Series): Column of substrates for all strains.
+        product (Pandas.Series): Column of products for all strains.
+
+    Returns:
+
+        network (list of tuples): list of reaction networks of each strain in 
+        tuples.
+    '''
+    nets = [tuple([substrate.loc[i], product.loc[i]]) 
+                   for i in range(len(substrate))]
+
+    return nets
+
+
+
 

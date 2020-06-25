@@ -181,3 +181,26 @@ Jun 22,2020
 Should I weight my cooperation index by abundance?
 I am calculating the intrinsic and the pairwaise interaction. What does this remind me to? To a matrix! Can I organize a matrix of facilitations?????
 Tomorrow: debug and test
+
+Jun 23,2020
+
+Today I calculated another predictor of community coalescence output. It is the ratio of two quantities: cohesion and competition. I hypothesized that in a community coalescence event, the cohesion is maximized, and thee competition is minimized. 
+To calculate the cohesion of a community, I summed up all the coopperation indices. The cooperation index that species i has with species j is measured by how many products of species i are also substrates of species j, and viceversa. The total cooperation index between two species is thereefore the sum of c_ij and c_ji.  
+To calculate the competition level of a community, I summed up the competition indices of each pair of species. The competition index between species i and j is the number of substrates that i shares with j.
+
+I don't know if I need to  divide the cohesion and competition by the number of terms I am adding. Check if the denominator I am thinking of adding would cancel for s  = 4.
+
+Check what aree the communities like? how are these matrices when I make them compete?
+
+Are there two regimes? one more hierarchical, of one generalist and several specialists? and another one horizontal, with only specialists? To check this, reduce drastically the number of reactions that a strain can posses
+
+Jun 25,2020
+
+When plotting (facilitated-provided)/competition against stable state, most of the times I obtain a positive correlation. I observe that whenever a species is very succesfull and doesn't have many reactions, like 1, this reaction is normally towards the end metabolite. Is this a real effect? or should I decrease the energy of metabolites as I go down the chain?
+Maybe, the cases where the above coefficient is low and the stable state is indeed high, its because even though positive interactions with the neighbours is small, the neighbours do very well, and therefore the strain with low interaction is benefitting from the interactions its neighbours have: is there a way to consider second order interactions?
+
+Because of the thermodynamic constraint, we can only consider reactions in one direction. Therefore, the number of posible edges is the same as that of an undirected graph. Yes, this graph is directional, but unidirectional, so given two metabolites, there is only one posible conection between them. In this sense, maybe some properties of the random Erdos and Renyi graphs apply to my case. 
+
+Can I find a critical facilitating index (or smartness index) under which the species goes extinct?
+
+providing-facilitation is a measure of generosity. There is a correlation between abundance and generosity. Sometimes its positive and sometimes its negative. What makes the correlation be negative or positive?

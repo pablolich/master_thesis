@@ -7,11 +7,16 @@ library(reshape2)
 library(viridis)
 library(grid)
 library(gridExtra)
+library(colorspace)
+library(plotwidgets)
 source('coal_analysis_functions.R')
 
 #Load data#
 network = read.table('../data/coal_network.csv', sep = ',', header = T,
-                     colClasses = c('character'), row.names = 1)
+                     colClasses = c('n_simulation'='numeric','strain'='numeric','substrate'='character',
+                                    'substrate'='character','maintenance'='numeric', 'surplus'='numeric',
+                                    'n_reac'='numeric', 'cohesion'='numeric','competition'='numeric', 
+                                    'autocohesion'='numeric'), row.names = 1)
 #Change format of one column quickly
 network$strain = paste('s', network$strain, sep = '')
 composition = read.table('../data/coal_composition.csv', sep = ',', header = T,
@@ -59,7 +64,6 @@ surv_strain['richness'] = richness
 
 #Merge
 all_data = merge(surv_strain, network, by = c('n_simulation', 'strain'))
-#Save it to data
 write.csv(all_data, '../data/community_data.csv', row.names = F)
 
 #Quick check
@@ -100,6 +104,8 @@ str_time_melt = melt(strains_time_s,
                      variable.name = 'strain',
                      id.vars = c('n_simulation', 'F','t'),
                      value.name = 'population')
+#get rid of extinctions? uncomment!
+#str_time_melt=time_series_eliminator(str_time_melt, s)
 met_time_melt = melt(metabolite_time_s, 
                      measure.vars = names(metabolite_time_s)[3:length((metabolite_time_s))],
                      variable.name = 'metabolite',
@@ -116,12 +122,18 @@ pb = txtProgressBar(1, n_sim, style=3)
 for (i in unique(sort(all_data$n_simulation))){
 
   #Get dataframe to plot (all strains of that simulation)
-  data_str = str_time_melt[which(str_time_melt$n_simulation == i),]
+  data_str = str_time_melt[which(str_time_melt$n_simulation == i-1),]
   # data_met = met_time_melt[which(met_time_melt$n_simulation == i),]
   # data_bet = bet_time_melt[which(bet_time_melt$n_simulation == i),]
+  #Initialite plot holder
+  plot_holder = list()
+  plot_c = 1
   time_str = plot_time_series(data_str, 
                               as.character(i),
                               data_str$strain)
+  plot_holder[[plot_c]] = time_str
+  plot_c = plot_c +1
+  #Save it to data
   # time_met = plot_time_series(data_met, as.character(i),
   #                             data_met$metabolite)
   # time_bet = plot_time_series(data_bet, as.character(i),
@@ -130,21 +142,42 @@ for (i in unique(sort(all_data$n_simulation))){
   #Plot and save community reaction networks
   #Get indices of networks corresponding to simulation i
   inds = which(all_data$n_simulation == i)
+  #Get all data for that simulation
+  all_data_sub = all_data[inds,]
+  predictor = ggplot(data = all_data_sub, 
+                     aes(x = (facilitation - providing)/competition, 
+                         y = stable.state, 
+                         colour = as.factor(n_simulation)))+
+    geom_point(aes(shape = as.factor(richness), 
+                   size = n_reac)) + 
+    theme(legend.position = 'none')
+  plot_holder[[plot_c]] = predictor
+  plot_c = plot_c +1
+  
   #Get networks for that simulation
   sub_networks = all_data[inds,c('substrate', 'product')]
   abundances = all_data$stable.state[inds]
   #Get community network
   com_network = community_network(sub_networks, abundances, m)
-  network = plot_network(com_network)
-  
+  network_p = plot_network(com_network)
+  plot_holder[[plot_c]] = network_p
+  plot_c = plot_c +1
+  #Gather all networks from surviving species
+  all_nets = all_networks(sub_networks, abundances, m)
+  #Initialize plot holder
+  #Plot them all
+  for (u in seq(length(all_nets))+3){
+    plot_holder[[u]] = plot_network(all_nets[[u-3]])
+  }
+
+  n = length(plot_holder)
+  nCol = floor(sqrt(n))
+  do.call('grid.arrange', c(plot_holder, nrow=nCol))
   #Join them in one plot
-  grid.arrange(time_str, 
-               # time_met, 
-               # time_bet, 
-               network, nrow = 1)
   #Print progress...
   j = j+1
   setTxtProgressBar(pb, j)
 }
 dev.off()
+
 
