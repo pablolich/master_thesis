@@ -18,6 +18,7 @@ global R; R = 8.314462618 # J/(K mol)
 global DeltaGATP; DeltaGATP = 75e3 # J/mol
 global T; T = 298 # K 
 global E; E = 3e6 # J (Total energy contained in metabolites)
+global seed; seed = 600034
 
 ## FUNCTIONS ##
 
@@ -45,9 +46,12 @@ def main(argv):
     #Number of metabolites
     m = 10
     #Number of strains
-    s = 1000
+    s = 75
     #Generate random uniformly distributed chemical potentials
-    mu = decreasing_pack(E, m)
+    np.random.seed(seed)
+    #mu = random_pack(E, m)
+    #mu = decreasing_pack(E, m)
+    mu = uniform_pack(E, m)
     #Set growth proportionality constant
     g = np.ones(s) 
     #Set supply and dilution rate of metabolites
@@ -57,10 +61,14 @@ def main(argv):
     xi0 = 0.005
     epsilon = 1e-3
     #Choose Eta matrix for each strain
-    Eta = 0.5*np.ones(shape = (s,m,m))
-    diag_ind = np.diag_indices(m)
+    Eta = np.zeros(shape = (s,m,m))
+    triu_ind = np.triu_indices(m,1)
+    tril_ind = np.tril_indices(m,-1)
+    eta_values_u = (triu_ind[1]-triu_ind[0])/(m-1)
+    eta_values_l = (tril_ind[0]-tril_ind[1])/(m-1)
     for i in range(s):
-        Eta[i][diag_ind] = 0
+        Eta[i][triu_ind] = eta_values_u
+        Eta[i][tril_ind] = eta_values_l
     #Choose q_max, ks and krn
     q_max = [np.ones(1) for i in range(s)]
     ks = [0.1*q_max[i] for i in range(s)]
@@ -69,7 +77,7 @@ def main(argv):
     #place)
     N_reac = comb(m, 2, exact = True)
     #Perform n_simul simulations
-    n_simul = 10
+    n_simul = 1
     #Generate reaction network for each strain
     tot = s*n_simul
     n_reac_s = np.zeros(tot, dtype = 'int')
@@ -88,6 +96,9 @@ def main(argv):
     competition = np.zeros(tot)
     #Prealocate vector for storing auto_cohesion indices
     auto_cohesion = np.zeros(tot)
+    #Prealocate vector for storing new cohesion and competition indices
+    coh = np.zeros(tot)
+    comp = np.zeros(tot)
     #Prealocate container of all networks 
     tot_reac_network = tot*[0]
     pbar = ProgressBar()
@@ -95,10 +106,10 @@ def main(argv):
     for i in pbar(range(tot)):
         #Randomly set number of reactions in the network
         num_reac = 0
-        np.random.seed(i)
+        np.random.seed(i+seed)
         #while num_reac == 0: 
         #    num_reac = round(np.random.beta(1,5)*N_reac)
-        num_reac = np.random.randint(1, m+1)#,N_reac+1)
+        num_reac = np.random.randint(1, N_reac+1)#m+1)
         #Get reaction network
         reac_network = network(m, num_reac)
         #Store reaction network 
@@ -109,13 +120,15 @@ def main(argv):
         rand_cost = np.random.normal(0,1)
         while rand_cost < -1/epsilon:
             rand_cost = np.random.normal(0,1)
-        maintenance[i] = xi0*n_reac_s[i]#*(1+epsilon*rand_cost)
+        #Free energy gap of reactions
+        mult = sum(tot_reac_network[i][1]-tot_reac_network[i][0])
+        maintenance[i] = xi0*mult#*(1+epsilon*rand_cost)
 
     #Integrate model#
     #################
 
     #Time span
-    tspan = tuple([1, 1e5])
+    tspan = tuple([1, 1e6])
     #Initial conditions 
     N0 = s*[1]
     C0 = m*[2] 
@@ -170,6 +183,9 @@ def main(argv):
         #Calculate the level of competition of each species
         comp_mat = competition_matrix(network_n, m)
         comp_indices = sum(comp_mat)
+        #Calculate cohesion-competition
+        coh[s*n:s*(n+1)] = np.sum(cohesion_matrix, axis = 1)
+        comp[s*n:s*(n+1)] = np.sum(comp_mat, axis = 1)
         #Store cohesion, autocohesion and competition indices
         cohesion[s*n:s*(n+1)] = cohesion_indices
         facilitation[s*n:s*(n+1)] = facilitation_index
@@ -177,8 +193,15 @@ def main(argv):
         cohesion_corrected[s*n:s*(n+1)] = coh_ind_corr
         competition[s*n:s*(n+1)] = comp_indices
         auto_cohesion[s*n:s*(n+1)] = auto_cohesion_indices
-
-        
+        #Calculate net level of interactions species
+        interactions = cohesion_matrix - comp_mat
+        #Add lower elements to upper elements
+        triu = np.triu(interactions)
+        tril = np.tril(interactions)
+        total_interactions = triu + tril.transpose()
+        sum_tot_inter = [sum(total_interactions[i,:]) + 
+                         sum(total_interactions[:,i])
+                         for i in range(s)]
          
         sol = solve_ivp(lambda t,z: model(t,z,s,m,kappa,gamma,network_n,mu,Eta,
                         q_max,ks,kr,g,maintenance_n), tspan, z0, 
@@ -187,6 +210,13 @@ def main(argv):
         z = sol.y
         t = sol.t
         t_points = len(t)
+        #if n == 0:
+        #    image = cohesion_matrix - comp_mat
+        #    plt.imshow(image)
+        #    plt.colorbar()
+        #    plt.show()
+        #    import ipdb; ipdb.set_trace(context = 20)
+        
         #Create community network and evaluate centrality measures for each
         #timepoint
         #Prealocate storing elements
@@ -246,7 +276,9 @@ def main(argv):
                                           'facilitation':facilitation,
                                           'cohesion_corr':cohesion_corrected,
                                           'competition':competition,
-                                          'autocohesion':auto_cohesion})], 
+                                          'autocohesion':auto_cohesion, 
+                                          'coh':coh,
+                                          'comp':comp})], 
                             axis = 1)
     df_network.insert(0, 'strain', np.tile(np.arange(s), n_simul))
     df_network.insert(0, 'n_simulation', np.repeat(np.arange(n_simul), s))

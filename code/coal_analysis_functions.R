@@ -6,7 +6,7 @@ plot_time_series = function(data, sim, col){
     geom_line() +
      theme(
           #legend.title = element_text(),
-          legend.position = "none") + 
+          legend.position = 'none') + 
     scale_x_continuous(trans = "log10") 
   return(p)
 }

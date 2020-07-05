@@ -45,13 +45,24 @@ def main(argv):
     keys = list(composition.keys())
     #Number of metabolites
     m = len([i for i in keys if i.startswith('m')])
+    s = len([i for i in keys if i.startswith('s')])
     #Vector of richnesses
-    richness = np.unique(all_data.richness)
-    #Preallocate storing object
-    column_names = ["similarity", "delF", "richness", "delP"]
+    richness = np.unique(all_data.richness)[4:5]
+    #Preallocate storing objects
+    column_names = ["similarity", "delF", "richness", "delP", "delP2"]
     similarity_fitness = pd.DataFrame(columns = column_names)
+    column_names = ['n_simulation', 'comm_number', 'strain', 'richness', 't',
+                     'N']
+    time_series = pd.DataFrame(columns = column_names)
     #Perform coalescence events between all posible pairs of communities with 
     #the same richness
+    tn = np.array([])
+    Nn = np.array([])
+    richnessn = np.array([], dtype = int)
+    n_simulationn = np.array([], dtype = int)
+    strainsn = np.array([], dtype = int)
+    c_numbern = np.array([], dtype = int)
+
     for r in richness:
         comp_long = all_data[all_data.richness == r]
         #How many communities do we have?
@@ -63,6 +74,7 @@ def main(argv):
         similarity = np.zeros(it)
         DF = np.zeros(it)
         DP = np.zeros(it)
+        DP2 = np.zeros(it)
         rich = r*np.ones(it)
         pbar = ProgressBar()
         print('Coalescence of communities of richness:', r)
@@ -95,11 +107,12 @@ def main(argv):
             fitness = individual_fitness(_in = np.sum(f_mat, axis = 0),
                                          out_ = np.sum(f_mat, axis = 1), 
                                          competition = np.sum(c_mat, axis = 0))
-            import ipdb; ipdb.set_trace(context = 20)
 
             #Calclulate level of cooperation/cohesion
             #Predictor2
-            P_c1 = np.mean((facilitation_index-providing_index)/competition_index)
+            P_c1 = np.mean((facilitation_index-providing_index))
+            #Predictor3
+            P2_c1 = sum(sum(f_mat-c_mat))
             #Perform coalescence event between the two communities
             t, z, nets = coalescence_event(C1 = comp_c1, 
                                            C2 = comp_c2, 
@@ -108,6 +121,19 @@ def main(argv):
 
             N = z[0:s]
             C = z[s:s+m]
+            t_points = len(t)
+            r_coal = len(N)
+            tn = np.concatenate([tn, np.tile(t, r_coal)])
+            Nn = np.concatenate([Nn, N.reshape(1, r_coal*t_points)[0]])
+            richness = np.repeat(r, 2*r*t_points)
+            richnessn = np.concatenate([richnessn, richness])
+            c_number = np.concatenate([np.repeat(c1, r*t_points),
+                                       np.repeat(c2, r*t_points)])
+            c_numbern= np.concatenate([c_numbern, c_number])
+            n_simulation = np.repeat(i, 2*r*t_points)
+            n_simulationn = np.concatenate([n_simulationn, n_simulation])
+            strains = np.repeat(np.arange(2*r), t_points)
+            strainsn = np.concatenate([strainsn, strains])
 
             #Predictors of community similarity
             #Calculate fitness of new community
@@ -147,8 +173,11 @@ def main(argv):
             competition_index = sum(c_mat)
             #Calclulate level of cooperation/cohesion
             #Predictor2
-            P_outcome = np.mean((facilitation_index-providing_index)/competition_index)
+            P_outcome = np.mean((facilitation_index-providing_index))
             DP[i] = P_outcome - P_c1
+            #Predictor3
+            P2_outcome = sum(sum(f_mat-c_mat))
+            DP2[i] = P2_outcome - P2_c1
             #Number of species present in community c1 originally
             abundance_0 = np.array(comp_c1['stable.state'])
             #Add as many 0 as species in community c2 to calculate similarity
@@ -157,13 +186,31 @@ def main(argv):
             similarity[i] = np.dot(abundance_0, abundance_f)/\
                             (np.sqrt(sum(abundance_0**2))*\
                             np.sqrt(sum(abundance_f**2)))
+
+            print(comp_c1)
+            print(comp_c2)
+            print(outcome)
+            print(similarity[i])
+            print(P2_c1)
+            print(P2_outcome)
+            import ipdb; ipdb.set_trace(context = 20)
+            
             #if (similarity[i] > 0.5) and (similarity[i]< 0.75):
             #    import ipdb; ipdb.set_trace(context = 20)
         
+        time_ser = pd.DataFrame({'n_simulation':n_simulationn,
+                                 'comm_number':c_numbern,
+                                 'strain':strainsn,
+                                 'richness':richnessn,
+                                 't':tn,
+                                 'N':Nn})
+        time_series = pd.concat([time_series, time_ser])
+
         sim_fit = pd.DataFrame({'similarity':similarity,
                                 'delF':DF, 
                                 'richness':rich,
-                                'delP':DP})
+                                'delP':DP,
+                                'delP2':DP2})
         similarity_fitness = pd.concat([similarity_fitness, sim_fit])
 
 

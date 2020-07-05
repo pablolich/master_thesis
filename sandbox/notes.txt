@@ -184,7 +184,7 @@ Tomorrow: debug and test
 
 Jun 23,2020
 
-Today I calculated another predictor of community coalescence output. It is the ratio of two quantities: cohesion and competition. I hypothesized that in a community coalescence event, the cohesion is maximized, and thee competition is minimized. 
+Today I calculated another predictor of community coalescence output. It is the ratio of two quantities: cohesion and competition. I hypothesized that in a community coalescence event, the cohesion is maximized, and the competition is minimized. 
 To calculate the cohesion of a community, I summed up all the coopperation indices. The cooperation index that species i has with species j is measured by how many products of species i are also substrates of species j, and viceversa. The total cooperation index between two species is thereefore the sum of c_ij and c_ji.  
 To calculate the competition level of a community, I summed up the competition indices of each pair of species. The competition index between species i and j is the number of substrates that i shares with j.
 
@@ -204,3 +204,38 @@ Because of the thermodynamic constraint, we can only consider reactions in one d
 Can I find a critical facilitating index (or smartness index) under which the species goes extinct?
 
 providing-facilitation is a measure of generosity. There is a correlation between abundance and generosity. Sometimes its positive and sometimes its negative. What makes the correlation be negative or positive?
+
+Jun 27,2020
+
+I have decreased the energy per metabolite, but still the bottom metabolites win because there is just so much of it. There is a threshold under which the strain that poseses 8-->9 can't survive anymore, because the energy it obtains isn't enough for grwth. When this happens, the most succesful metabolite is the one that has 7-->8
+
+Jun 28,2020
+
+I should record the mean generosity and competition level of the community, weighted bya abundances maybe, as time goes by, for a cummunity of 1000 species initially
+To record the correct similarity, instead of looking at what sepecies remain, which is the similarity of composition, I should look at the similarity of resource consumption. The similarity between the community reaction network. 
+
+
+Jun 28,2020
+
+I want to plot the abundance before and after community coalescence.
+Also check that the species that remain in the community after coalescence have recruited each other ie, their interaction is high.
+Look at interaction intensity between species to predict which ones will work well. How can you look at higher order interactions?
+Top down coselection is weak because its thee trash that the microbe is dealing with. 
+Should I measure dissimilarity between two communities with the Jaccard and Bray-Curtis distances? Maybe the community reaction network doesn't change that much, even though the sppecies do: a universal reaction network
+
+Jun 29,2020
+
+The dominants are the most generous because they normally use metabolite 8 (high in degree) and yield 9, which is utilized by none. This is a trivial result, but also opens the research of bottom-up co-selection.
+
+Things to do for next weeek
+
+	1. Plot time series for community coalescence.
+	2. Check what are things like in the eregime of high number of reactions.
+	3. To check for higher interactions with distant neighbours, represent the facilitation matrix as a network and visualy inspect it
+	4. See if the total flux through of the community drives community coalescence.  
+	5. Record evolution of competititon, facilitation and providing through time, to see deeply what changes in the dynamics. 
+	6. What resource flux goes through each metabolite at each timepiont?
+	7. Histogram the degree distribution of these networks
+	8. Try the diversification option
+	9. Plot heatmap with number of reactions, and where are they in the metabolite space
+

@@ -5,6 +5,7 @@ import networkx as nx
 import pandas as pd
 from itertools import combinations, product, permutations
 from scipy.special import comb
+from progressbar import ProgressBar
 
 global R; R = 8.314462618 # J/(K mol)
 global DeltaGATP; DeltaGATP = 75e3 # J/mol
@@ -307,7 +308,8 @@ def coalescence_event(C1, C2, m, s):
                                       kappa = 2*np.ones(m), 
                                       gamma = 1*np.ones(m), 
                                       networks = nets, 
-                                      mu = uniform_pack(E, m), 
+                                      #mu = uniform_pack(E, m),
+                                      mu = decreasing_pack(E, m), 
                                       Eta = Eta, 
                                       q_max = q_m, 
                                       ks = ks, 
@@ -338,7 +340,7 @@ def uniform_pack(E, m):
     return np.linspace(E,0,m)
 
 def second_order_polynomial(x):
-    return(-x**2)
+        return(-x**0.1)
 
 def decreasing_pack(E, m):
     '''Generate quadraticaly decreasing chemical potentials'''
@@ -417,22 +419,34 @@ def facilitation_matrix(networks, m):
     #Get number of strains
     s = len(networks)
     #Get matrix indices (species pairs)
-    pairs = product(range(s), repeat = 2)
+    pairs = permutations(range(s),2)
     #Preallocate facilitation matrix
     fac_mat = np.zeros(shape=(s,s))
     for i, j in pairs:
         ##Initialize sign of interaction for iteration i,j
         #sign = 1
-        #Get products of species i and used substrates by species j
-        sub_i = np.unique(networks[i][1])
-        prod_j = np.unique(networks[j][0])
+        #Get products of species j and used substrates by species i
+        sub_i = networks[i][0]
+        prod_j = networks[j][1]
+        ##Remove the last metabolite from products and the first metabolite from
+        ##substrates, since these can't be shared. 
+        #prod_i = np.delete(prod_i, np.where(prod_i == m-1))
+        #sub_j = np.delete(sub_j, np.where(sub_j == 0))
+        #Get number of substrates of strains i and products of strain j.
+        #n_ij = tuple([len(prod_i), len(sub_j)])
+        ##Use the minimum of these numbers as the normalization constant.
+        #mn_ij = min(n_ij)
         #Get shared elements
-        shared = np.intersect1d(sub_i, prod_j)
+        shared = np.intersect1d(prod_j, sub_i)
+        #Calculate reliability of strain i in each of its substrates
+        rel = reliability_dict(sub_i)
+        #Get reliability in facilitated metabolites for species j
+        rel_fac = [rel[str(i)] for i in shared] 
         ##Autofacilitation is cheating
         #if i==j:
         #    sign = 0#-1
         #Facilitation degree between species i and j
-        fac_mat[i,j] = len(shared)#*sign
+        fac_mat[i,j] = sum(rel_fac) 
 
     return fac_mat
 
@@ -446,15 +460,35 @@ def competition_matrix(networks, m):
     #Preallocate facilitation matrix
     comp_mat = np.zeros(shape=(s,s))
     for i, j in pairs:
+        #Get number of reactions of strains i and j.
+        n_ij = tuple([len(networks[i][0]), len(networks[j][0])])
+        #Get minimum of these numbers
+        mn_ij = min(n_ij)
         #Get used substrates by species i and products used by species j
-        sub_i = np.unique(networks[i][0])
-        sub_j = np.unique(networks[j][0])
+        sub_i = networks[i][0]
+        sub_j = networks[j][0]
         #Get shared elements
         shared = np.intersect1d(sub_i, sub_j)
+        #Calculate reliability of strain i in each of its metaboltes
+        rel = reliability_dict(sub_i)
+        #Get reliability in competing metabolites with species j
+        rel_comp = [rel[str(i)] for i in shared] 
         #Facilitation degree between species i and j
-        comp_mat[i,j] = len(shared)
+        comp_mat[i,j] = sum(rel_comp)
 
     return comp_mat
+
+def reliability_dict(vec):
+    '''Calculates the normalized index of repetition of each element in vec'''
+    #Initialize keys of dictionary
+    keys = [str(i) for i in np.unique(vec)]
+    #Calculate number of repetitions of each element
+    values = np.bincount(vec)
+    #Eliminate 0s
+    values = values[values != 0]/len(vec)
+    #Create dictionary
+    reliability = dict(zip(keys, values))
+    return reliability 
 
 def individual_fitness(_in, out_, competition):
     return (_in - out_)/competition
@@ -529,6 +563,52 @@ def vector2tuple(substrate, product):
                    for i in range(len(substrate))]
 
     return nets
+
+def evol_richness(abundances_t):
+    '''Get evolution of richness as time goes by'''
+    it = len(abundances_t)
+    richness = np.zeros(it)
+    for i in range(it):
+        richness[i] = sum(abundances_t.iloc[i,2:]>=1)
+    return richness
+
+
+def interaction_evolution(time_series, networks, m, t_points):
+    '''Calculate matrix of interactions at every point in time'''
+    s = len(networks)
+    it = len(t_points)
+    inter_evol = np.zeros(shape = (it, s))
+    f_evol = np.zeros(shape = (it, s))
+    c_evol = np.zeros(shape = (it, s))
+    #Transform from string to numeric vector all elements in substrate and 
+    #product colums
+    networks['substrate'] = networks['substrate'].apply(lambda x: 
+                            np.fromstring(x[1:-1], sep=' ', dtype = int))
+    networks['product'] = networks['product'].apply(lambda x: 
+                          np.fromstring(x[1:-1], sep=' ', dtype = int))
+    #Calculate community interaction measures at extinction points. 
+    pbar = ProgressBar()
+    j = 0
+    for i in pbar(t_points):
+        #Get present and extinct species, those that are greater than 1e-3
+        present = np.where(time_series.iloc[i+1,2:]>=1)[0]
+        extinct = np.where(time_series.iloc[i+1,2:]<1)[0]
+        #Get networks from the present species
+        networks_i = networks.iloc[present].reset_index(drop = True)
+        #Get a tuple for reaction networks
+        networks_tu = vector2tuple(networks_i['substrate'], 
+                                   networks_i['product'])
+        #Calculate interaction matrix for this set of reaction networks
+        f_mat = facilitation_matrix(networks_tu, m)
+        c_mat = competition_matrix(networks_tu, m)
+        interactions = 0.5*(1+(f_mat - c_mat))
+        f_evol[j,present] = np.mean(f_mat, axis = 1)
+        c_evol[j,present] = np.mean(c_mat, axis = 1)
+        inter_evol[j,present] = np.mean(interactions, axis = 1)
+        j += 1
+    return(f_evol, c_evol, inter_evol)
+
+
 
 
 

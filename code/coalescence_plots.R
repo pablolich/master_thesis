@@ -5,7 +5,8 @@ similarity_fitness = read.table('../data/similarity_fitness.csv', sep = ',',
                                 header = T)
 #Get rid of outliers
 similarity_fitness = similarity_fitness[abs(similarity_fitness$delF)<10,]
-ggplot(data = similarity_fitness, aes(x = delP, y = similarity)) +
+sub_data = similarity_fitness[similarity_fitness$richness == 12,]
+ggplot(data = similarity_fitness, aes(x = delP2, y = similarity)) +
   geom_point(aes(colour = richness))+
   scale_color_gradient(low="black", high="red")
 rich = unique(scatterr$richness)

@@ -1,4 +1,4 @@
-#setwd("~/Desktop/master_thesis/code")
+setwd("~/Desktop/master_thesis/code")
 rm(list=ls())
 #Load libraries and functions#
 library(stringr)
@@ -44,7 +44,7 @@ melted_str_comp = melt(strain_comp, id.vars = c('n_simulation', 'F'),
 
 
 #Eliminate extinctions and outliers
-out = melted_str_comp$n_simulation[which(melted_str_comp$stable.state > 1e4)]
+out = melted_str_comp$n_simulation[which(melted_str_comp$stable.state > 2e3)]
 surv_strain = melted_str_comp[which(!(melted_str_comp$n_simulation %in% out) & 
                                     melted_str_comp$stable.state > 1) , ]
 #Sort conveniently
@@ -72,13 +72,54 @@ v = all_data$richness
 v = v[c(TRUE, !v[-length(v)] == v[-1])]
 hist(v)
 
+#Another quick check
+simulations = sample(seq(0,499), size = 10)
+#get indicess that match sampled simulations
+sampled_data = all_data[all_data$n_simulation %in% simulations,]
+ggplot(sampled_data, aes(x = competition, y = stable.state,
+                         size = n_reac, 
+                         colour = as.factor(n_simulation)))+
+  geom_point()
+
+#Get rid of outliers
+all_data = all_data[!(all_data$n_simulation == 270),]
+#Plot median stable state for each reaction number
+num_reac_fitness = aggregate(stable.state~n_reac, all_data, median)
+ggplot(num_reac_fitness, aes(x = n_reac, y = stable.state))+geom_point()
+
 #Plot F for each simulation
 ggplot(data = time_series, aes(x = t, y = F, colour = as.factor(n_simulation)))+ 
   geom_line()+
   theme(legend.position = 'none', legend.text = element_blank()) + 
   scale_x_continuous(trans = 'log10')
 
+#Plot interaction evolution
+inter_evol = read.table('../data/interaction_evolution.csv', sep = ',', header = T,
+                         row.names = 1)
 
+#Get average curve for dying people, and average curve for surviving people, and compare.
+extinct = inter_evol[inter_evol$survivor == 0,]
+mean_extinct = aggregate(extinct[, 3], list(extinct$t), mean)
+extant = inter_evol[inter_evol$survivor != 0,]
+mean_extant = aggregate(extant[, 3], list(extant$t), mean)
+means = melt(merge(mean_extinct, mean_extant, by = 'Group.1'), id.vars = 'Group.1')
+
+ggplot()+
+  geom_point(data = inter_evol, aes(colour  =  log10(abundance+1), 
+                                   alpha = as.factor(survivor), 
+                                   x = t, 
+                                   y = interaction, 
+                                   group = strain))+
+  theme_classic()+
+  theme(legend.position = 'none')+
+
+  scale_alpha_manual(values = c(0.1,0.5,1,1))+
+  scale_x_continuous(trans = "log10")+
+  scale_color_gradient(low = "blue", high = "red", na.value = NA)+
+  geom_line(data = means[means$variable=='x.x',], aes(x = Group.1, y = value),
+            color = 'blue', linetype = 'dashed', size = 3)+
+  geom_line(data = means[means$variable=='x.y',], aes(x = Group.1, y = value),
+            color = 'red', linetype = 'dashed', size = 3)
 #Plot time series to pdf
 #First put time_series of strains into long format
 ind_strains_t = which(startsWith(names(time_series), 's')|
@@ -122,7 +163,7 @@ pb = txtProgressBar(1, n_sim, style=3)
 for (i in unique(sort(all_data$n_simulation))){
 
   #Get dataframe to plot (all strains of that simulation)
-  data_str = str_time_melt[which(str_time_melt$n_simulation == i-1),]
+  data_str = str_time_melt[which(str_time_melt$n_simulation == i),]
   # data_met = met_time_melt[which(met_time_melt$n_simulation == i),]
   # data_bet = bet_time_melt[which(bet_time_melt$n_simulation == i),]
   #Initialite plot holder
@@ -145,9 +186,10 @@ for (i in unique(sort(all_data$n_simulation))){
   #Get all data for that simulation
   all_data_sub = all_data[inds,]
   predictor = ggplot(data = all_data_sub, 
-                     aes(x = (facilitation - providing)/competition, 
+                     aes(x = (coh+surplus - comp), 
                          y = stable.state, 
                          colour = as.factor(n_simulation)))+
+    ggtitle(as.character(mean(all_data_sub$competition)))+
     geom_point(aes(shape = as.factor(richness), 
                    size = n_reac)) + 
     theme(legend.position = 'none')
@@ -155,15 +197,18 @@ for (i in unique(sort(all_data$n_simulation))){
   plot_c = plot_c +1
   
   #Get networks for that simulation
-  sub_networks = all_data[inds,c('substrate', 'product')]
+  sub_networks = all_data[inds,c('substrate', 'product', 'stable.state')]
+  #Indexes of top 3 performing species
+  sub_networks = sub_networks[order(-sub_networks$stable.state),]
+  top_networks = sub_networks[1:3,]
   abundances = all_data$stable.state[inds]
   #Get community network
   com_network = community_network(sub_networks, abundances, m)
   network_p = plot_network(com_network)
   plot_holder[[plot_c]] = network_p
   plot_c = plot_c +1
-  #Gather all networks from surviving species
-  all_nets = all_networks(sub_networks, abundances, m)
+  #Gather networks from top 3 surviving species
+  all_nets = all_networks(top_networks, abundances[0:3], m)
   #Initialize plot holder
   #Plot them all
   for (u in seq(length(all_nets))+3){
@@ -179,5 +224,6 @@ for (i in unique(sort(all_data$n_simulation))){
   setTxtProgressBar(pb, j)
 }
 dev.off()
+
 
 
