@@ -153,3 +153,87 @@ time_series_eliminator = function(time_series_melt, s){
   }
   return(time_series_melt)
 }
+
+distance = function(x, y, distance_l, distance_u){
+  #This function selects indices of vectors x and y, where the point is above (1) or below (-1)
+  #a certain distance from the line (1,1)
+  #Get points in the curve y = x + d to compare with y coordinates of data
+  y_line_p = x + distance_u
+  #Get the indices of points where y > y_line_p
+  ind_p = which(y > y_line_p)
+  
+  #Get points in the curve y = x - d to compare with y coordinates of data
+  y_line_m = x - distance_l
+  #Get the indices of points where y < y_line_m
+  ind_m = which(y < y_line_m)
+  
+  #Get the indices of points where y_line_m < y < y_line_p
+  ind_b = which(y > y_line_m & y < y_line_p)
+  
+  #Assign pertinent values to each indices
+  values = rep(0, length(x))
+  values[ind_p] = 1
+  values[ind_b] = 0
+  values[ind_m] = -1
+  
+  return(values)
+}
+
+non_contiguous = function(data){
+  simul = unique(data$n_simulation)
+  richness = rep(0, length(simul))
+  j = 1
+  for (i in simul){
+    richness[j] = unique(data$richness[data$n_simulation == i])
+    j = j + 1
+  }
+  return(richness)
+}
+
+binning = function(x, precision){
+  #Initialize output
+  means = c()
+  sets = list()
+  ind_sets = list()#Holds the indices in t of elements in sets
+  for (i in seq(length(x))){
+    #If sets and means are empty, initialize with the first element of x
+    if (length(sets) == 0 && length(means) == 0){
+      means[i] = x[i]
+      sets[[i]] = x[i]
+      ind_sets[[i]] = i
+    }
+    else{
+      #Loop through means to check if x[i] belongs to one of them
+      #Initialize a vector of FALSE. After looping through the means, the vector
+      #will have TRUE values for those mean values that span a confidence interval
+      #that includes x[i]
+      bool_ = rep(F, length(means))
+      for (j in seq(length(means))){
+        #Check if x[i] is within a threshold interval of means[j]
+        if ((x[i]>((1-precision)*means[j]) && x[i]<((1+precision)*means[j]))){
+          bool_[j] = T
+        }
+      }
+      #A group was found for the value x[i]
+      if (any(bool_)){
+        #Where does it belong to?
+        ind = which(bool_ == T)[1]
+        #Add it to the corresponding set of values in the sets vector
+        sets[[ind]] = c(sets[[ind]], x[i])
+        ind_sets[[ind]] = c(ind_sets[[ind]], i)
+        #Update that value of the mean with the new added vector
+        means[ind] = median(sets[[ind]])
+      }
+      #The element is not in any of the means vector elements
+      else{
+        #We add it as a new element to the means vector, and we create a new
+        #element in the sets list
+        means = c(means, x[i])
+        #To add a new list, we use the new length of means
+        sets[[length(means)]] = x[i]
+        ind_sets[[length(means)]] = i
+      }
+    }
+  }
+  return(ind_sets)
+}

@@ -1,4 +1,4 @@
-setwd("~/Desktop/master_thesis/code")
+#setwd("~/Desktop/master_thesis/code")
 rm(list=ls())
 #Load libraries and functions#
 library(stringr)
@@ -9,6 +9,8 @@ library(grid)
 library(gridExtra)
 library(colorspace)
 library(plotwidgets)
+library(RColorBrewer)
+
 source('coal_analysis_functions.R')
 
 #Load data#
@@ -45,7 +47,7 @@ melted_str_comp = melt(strain_comp, id.vars = c('n_simulation', 'F'),
 
 #Eliminate extinctions and outliers
 out = melted_str_comp$n_simulation[which(melted_str_comp$stable.state > 2e3)]
-surv_strain = melted_str_comp[which(!(melted_str_comp$n_simulation %in% out) & 
+surv_strain = melted_str_comp[which(#!(melted_str_comp$n_simulation %in% out) & 
                                     melted_str_comp$stable.state > 1) , ]
 #Sort conveniently
 surv_strain = surv_strain[order(surv_strain$n_simulation,
@@ -64,7 +66,6 @@ surv_strain['richness'] = richness
 
 #Merge
 all_data = merge(surv_strain, network, by = c('n_simulation', 'strain'))
-write.csv(all_data, '../data/community_data.csv', row.names = F)
 
 #Quick check
 v = all_data$richness
@@ -98,8 +99,9 @@ inter_evol = read.table('../data/interaction_evolution.csv', sep = ',', header =
                          row.names = 1)
 
 #Get average curve for dying people, and average curve for surviving people, and compare.
-extinct = inter_evol[inter_evol$survivor == 0,]
-mean_extinct = aggregate(extinct[, 3], list(extinct$t), mean)
+extinct_before = inter_evol[inter_evol$survivor == 0,]
+#extinct_before = extinct[extinct$interaction != 0,]
+mean_extinct = aggregate(extinct_before[, 3], list(extinct_before$t), mean)
 extant = inter_evol[inter_evol$survivor != 0,]
 mean_extant = aggregate(extant[, 3], list(extant$t), mean)
 means = melt(merge(mean_extinct, mean_extant, by = 'Group.1'), id.vars = 'Group.1')
@@ -120,6 +122,29 @@ ggplot()+
             color = 'blue', linetype = 'dashed', size = 3)+
   geom_line(data = means[means$variable=='x.y',], aes(x = Group.1, y = value),
             color = 'red', linetype = 'dashed', size = 3)
+
+#Plot community facilitation vs community competition
+facilitation = aggregate(all_data[,17], list(all_data$n_simulation), mean)
+competition = aggregate(all_data[,18], list(all_data$n_simulation), mean)
+n_reac_community = aggregate(all_data[,10], list(all_data$n_simulation), mean)
+plot(competition$x, facilitation$x)
+#Make dataframe with data on community-level information
+colors = distance(competition$x, facilitation$x, 1.2)
+data_community = data.frame(competition$x, facilitation$x, colors)
+ggplot(data = data_community, aes(x = competition.x, y = facilitation.x))+
+  geom_point(aes(colour = as.factor(colors)))+
+  scale_color_manual(values=brewer.pal(n = 3, name = 'RdYlBu'))
+
+#Add color data to all_data and save it
+unique_richness = non_contiguous(all_data)
+compete_vector = rep(colors, unique_richness)
+#Sort all_data according to simulation before merging
+all_data = all_data[order(all_data$n_simulation),]
+#Merge to all_data
+all_data['team'] = compete_vector 
+
+#Save data
+
 #Plot time series to pdf
 #First put time_series of strains into long format
 ind_strains_t = which(startsWith(names(time_series), 's')|

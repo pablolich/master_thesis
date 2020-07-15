@@ -3,9 +3,11 @@
 \graphicspath{{../Results/}}
 \usepackage{lineno} % To count lines
 \usepackage{setspace} %To change line spacing
-\usepackage{cite} % To cite
+\usepackage{natbib} % To cite
 \usepackage{amsmath}
 \usepackage[paper=a4paper,margin=1in]{geometry}
+
+
 
 \newcommand{\wordcount}{\input{count2.sum}} %Word counting
 
@@ -30,7 +32,7 @@
 	\newpage
 	
 	\begin{linenumbers}
-		\section{Introduction}
+		\section{Introduction notes} 
 			\begin{itemize}
 				\item State my aims/hypotheses/questions by the end of the introduction.
 				\item Make sure I explain everything adequately. Provide more background in the introduction and methods that
@@ -50,10 +52,174 @@
 				\item Will a coalesced community be more perssistent than a naive one upon a  event if it has a history of coalescence?
 				\item How cohesive a community is when we analyze it in terms of cohord and dominant species? 
 				\item Experimental studies report cohesivness in comunity coalescence events.
+				\item talk about why this model is good with methanogenic communities, strong cross feeding
+				\item say at some point how many possible networks there are.
+				\item talk about coselection
+				\item measure community productivity and check that the correlation breaks down because there is co-selection.
+				\item stress importance of dominant community interaction types
+				\item microbial ensamblages
+				\item Theoretical efforts for community coalescence \citep{Tikhonov2016, Livingston2013, Toquenaga1997, Gilpin1994}
+				\item Experimental efforts to understand community coalescence \citep{Lu2018, Sierocinski2017}
+				\item Community coalescence is just another expression of the fight competition vs facilitation...
+				
 			\end{itemize}
-	\end{linenumbers}
-		
 		\newpage
-		\bibliographystyle{unsrt}
+		\section{Introduction}
+			Microbial communities are widespread throughout our planet, from the deep ocean to the human gut, and they play a critical role in natural processes ranging from animal development and host health \citep{Huttenhower2012} to biogeochemical cycles \citep{Falkowski2008}. These communities are very complex, often harboring hundreds of species, making them hard to characterize. Recently, DNA sequencing has facilitated a high-resolution mapping of these consortia, opening a niche for ambitious theorists and experimentalists to collaboratively disentangle the complexity of these systems \citep{Marsland2019, Goldford2018, Goyal2018, Friedman2017, Costello2012}. One of the problems yet to solved is community assembly -- the process by which species come together and interact to establish a community. Contrary to what is found in the macroscopic world, in microbial ecology it is usual that whole communities move to a region where they encounter another community. The process by which two or more communities that were previously separated join and reassemble into a new community has been termed "community coalescence" \citep{Rillig2015}. This type of event happens repeatedly in nature due to abiotic (wind, tides or river flow), biotic (animal courtship, parent-offspring interactions or leaves falling), and anthropogenic (industrial anaerobic digestion, agriculture, between-human contact) factors \citep{Castledine2020}. Despite the frequency and importance of microbial community coalescence, the mechanisms responsible for the community structure and function resulting from coalescence events remain poorly understood.\\
+			Early mathematical models of community-community invasion revealed that when two communities previously separated by a barrier merge due to its removal, asymmetrical dominance of one community over the other one is likely to occur \citep{Gilpin1994, Toquenaga1997}. As an explanation for this observation, it was argued that, because communities have been assembled through a history of competitive exclusion, they are likely to compete with each other as coordinated entities, rather than as a random collection of species. More recent theoretical work uses consumer-resource models to show that coalescing microbial communities exhibit an emergent cohesiveness \citep{Tikhonov2016, Tikhonov2017}. Recent results from coalescence experiments of methanogenic communities suggest that during a coalescence event between two communities, multiple taxa from the same community act as cohesive units and are selected together (ecological co-selection) \citep{Sierocinski2017}. Further experimental evidence of co-selection in community coalescence has been reported in \citet{Lu2018}, where it was shown that successful collective invasions are accompanied by strong community-level interactions. The microbial communities used in these experiments are characterized by complex cross-feeding interactions \citep{Hansen2007, Embree2015}, and the type of trophic interactions present in a community has been suggested as a factor that might affect the outcome of community coalescence \citep{Castledine2020}. Yet, theoretical models so far have considered competition between species as the only force driving community assembly.\\
+			In this work, I explore the role of other types of interactions, which appear to be ubiquitous in microbial communities. Specifically, I propose a metric of community cohesion that accounts for both competitive and mutualistic interactions. I then use a consumer-resource model that includes both facilitation of metabolites via by-product secretion, and competition for substrates, to simulate the assembly of numerous communities. Finally, I measure the cohesion level on the simulated communities and use it to predict the outcome of microbial community coalescence events. 
+		\section{Methods}
+			\subsection{Community Assembly}
+			In order to simulate communities with cross-feeding interactions, I use a consumer-resource model inspired in the the work of \citep{Marsland2019} that PhD student Jacob Cook has developed.  I modify parts of this model to make it more suitable for my purposes. \\
+			I consider the population dynamics of $ s $ consumers (eg. bacterial strains) that feed on $ m $ resources. In this model,  a species  is defined by its metabolic stratetgy to harvest energy from the environment. Let $ G_{\alpha}(\mathcal{M}, \mathcal{N}) $ be the metabolic network of species $ \alpha $, where $ \mathcal{M} $ is a set of nodes $ \mathcal{M}  $ = \{$x:x $ is an integer from the interval $ [1, m]  $ labeling the metabolite\} and $ \mathcal{N} $ a set of uni-directed edges $ \mathcal{N}  $ = \{$ (x, y): x \in \mathcal{M} \textrm{ , } y \in \mathcal{M} $ and $ x < y $ (x and y are product and substrate of a chemical reaction)\}. The growth power of species $ \alpha $,  $ J^{grow}_{\alpha}$ will be given by the product of the amount of generated energy $ \eta_{i} $ and rate $ q_{i} $ of each reaction, summed across all reactions in $ \mathcal{N} $.
+			\begin{linenomath*}	
+			\begin{equation}
+				J^{grow}_{\alpha} = \sum_{i = 1}^{|\mathcal{N}|} \ q_i \eta_i
+			\end{equation}
+			\end{linenomath*}
+			where $ | \ \ | $ denotes cardinality of a set. Refer to subsection \ref{subsed:reversible_enzyme_kinetics} for specifications on $ q $ and  $ \eta $ .\\
+			Every species has a mantenance cost $ \chi_{\alpha} $ that represents the required energy to sustain life, and I model as
+			\begin{linenomath*}	
+			\begin{equation}\label{eq:cost_function}
+				\chi_{\alpha} = \chi_0 \left(1 + \epsilon\rho\right) \sum_{\mathcal{N}}(y - x)
+			\end{equation}
+			\end{linenomath*}
+			where $ \chi_0 $ is the average cost per reaction, $ \epsilon \rho $ is a small random fluctuation (with $ \rho \sim N(0,1) $ and $ \epsilon $ is the magnitude of the fluctuation), and the summatory term adds up the metabolite gap of all reactions. Therefore, the more reactions a speciess has or/and the more energetically they are, the higher is the maintenance cost. The cost function \ref{eq:cost_function} ensures that neither generalists, nor specialists, are systematically favored during the community assembly.\\
+			Under this parametrization, the time evolution of the population of species $ \alpha $ can be writtne as
+			\begin{linenomath*}	
+			\begin{equation}\label{eq:dNdt}
+				\dfrac{dN_{\alpha}}{dt} = g_{\alpha}N_{\alpha}\left[J_{\alpha}^{grow}-\chi_{\alpha}\right] 
+			\end{equation}
+			\end{linenomath*}
+			where $ g_{\alpha} $ is a proportionality constant relating energy to abundance of strain $ \alpha $\\
+			The dynamics of the resources depend on the incoming and outgoing resource fluxes due to the biochemical reactions taking place inside bacteria, as well as the resource extrenal dynamics. The incoming resource flux of metabolite $ \beta $  generated by strain $ \alpha $ is its rate of consumption due to all the biochemical reactions possesed by $ \alpha $ in which $ \beta $ is a substrate. The outgoing flux is that due to reactions in which $ \beta $ is a product.
+			\begin{linenomath*}	
+			\begin{align}
+			\begin{split}
+				v^{in}_{\alpha \beta} &= \sum_{\mathcal{X}} q   \qquad \textrm{with}  \quad  \mathcal{X} \equiv N \cap \{(x = \beta, y)\}\\
+				v^{out}_{\alpha \beta} &= \sum_{\mathcal{Y}} q , \qquad \textrm{with}  \quad  \mathcal{Y} \equiv N \cap \{(x, y = \beta )\}
+			\end{split}
+			\end{align}
+			\end{linenomath*}
+			The external resource dynamics are modelled as a supply rate minus a dilution rate that depends on the resource concentration to ensure convergent dynamics. 
+			\begin{linenomath*}	
+			\begin{equation}
+				h_{\beta}  =  \kappa_{\beta} - \gamma_{\beta}C_{\beta}
+			\end{equation}
+			\end{linenomath*}
+			Therefore, the variation with time of the concentration of metabolite $ \beta $ has the form
+			\begin{linenomath*}	
+			\begin{equation}
+					\dfrac{dC_{\beta}}{dt} = h_{\beta} + \sum_{{\alpha} = 1}^{s} \left(v_{{\alpha}\beta}^{in} -v_{{\alpha}\beta}^{out} \right)N_{\alpha} \label{eq:dCdt}
+			\end{equation}
+			\end{linenomath*}
+			Thus, the model consists of $ s + m $ coupled differential equations completely specified by \ref{eq:dNdt} and \ref{eq:dCdt}. Armed with this model I now simulate $ n_{sim} = 2 \cdot 10^3 $ community assembly events. \\
+			First, I create $ s \cdot n_{sim}  $ random reaction networks, $ G_{\alpha}(\mathcal{M}, \mathcal{N}) $ using the following  procedure. Consider, the $ m \times m $ adjacency matrix $ A^{\alpha}_{ij} $, whose elements  represent the edges $ (i, j) $ of $ G_{\alpha}$. Since the reaction network is hierarchical ($ i < j $, subsection \ref{subsed:reversible_enzyme_kinetics}), the adjacency matrix is an upper triangular matrix with zeros in the main diagonal, and the reactions possesed by strain $ \alpha $ can be expressed as $ (i, i + k) $, where $ k $ represents the k$ ^{th} $ diagonal of $ A $ ($ k = 1, \dots m - 1 $ with $ k = 0 $ being the main diagonal), and $ i $ is the row number of one of its elements ($ i = 1 \dots m $). The reaction network $ G_{\alpha} $ is constructed by sampling $ n_{reac} $ pairs of $ i $, $ k $ according to the algorithm summarized below.	
+			\begin{enumerate}
+				\item Choose $ n_{reac} $ by sampling it from a uniform distribution $ U \left(1, {m\choose2}\right) $
+				\item \sloppy Choose $ k $  by sampling one value from truncated normal distribution $N\left(1,  \sqrt {m - 1}\right)$ with limits $ [1, m-1] $, and rounding it to the closest integer.
+				\item Sample $ i $ from a uniform distribution of integers $ U(0, m-k) $.
+				\item The reaction $ (i, i + k) $ is stored, and the process is repeated until $ n_{reac} $ reactions have been sampled.
+			\end{enumerate}
+			Some notes about this algorithm are, first, that the limits of the distribution of $ n_{reac} $ are choosen to account for all possible values: the network with only 1 edge, and the fully connected network with $ m \choose 2 $ edges. Second, sampling $ k $ from a truncated normal distribution ensures that high metabolite gaps (very energetic reactions) are not likely to happen. This introduces a bias against the precence of super-organisms with few and very energetic reactions, which are rare in microbial communities. Third, the truncation limits have been chosen to respect the hierarchical character of the network. Finally, the upper limit of the uniform distribution from wich $ i $ is sampled is determined by $ k $, the diagonal we are sampling from. \\
+			When the sampling of reaction networks is completed, I set the values for the rest of the parameters of the model. These values can be found in table \ref{tab:parameters} and are constant throughout the work. The reason for this is that, my aim is not to parametrize the model to reveal large-scale patterns found in experiments (although that would be a fruitful endavour because of the rich parameter space of this model). Rather, I use it to simulate a set of microbial communities with cross-feeding interactions that will be later used in the community coalescence experiments.\\
+			
+			
+			and measure community cohesion when the system has reached stable state ie, the abundances of each bacterial strain remain constant with time.\\
+			\subsection{Community Cohesion}
+			The cohesion of a community -- the degree to which species in a community colaborate with each other,  is calculated as \textit{facilitation} -- \textit{competititon}. The 
+			\subsection{Community Coalescence}
+			The simulations of community coalescence put at my disposal many communities 
+			\section{Discussion}
+				\begin{itemize}
+					\item  Although it certainly seems an exaggeration to view the communiity as such a tightly regimented entity, it is also perilous to ignore the fadct that coevolutionary processes can play an important role in communities.
+					\item Cooperation reduces community stability, tho increases community fitness...  \citep{Coyte2015}
+					\item This thesis addresses the question of what are truly the mechanisms explaining what experiments show? An alternative measure of cohesivenes that stems from a more realistic modeling of microbial ecosystems is able to reproduce this results, and thus is closer to uncover what are the real mechanisms behind community cohesion.
+				\end{itemize}
+			\section{Things to do in the future}
+			\begin{itemize}
+				\item Ask Emma about papers of hierarchy of metabolites
+				\item Simplify notation as much as posible (ie, $ n_{reac} \rightarrow n_r $)
+				\item Find a paper that says that organisms with few and very energetic reactions are rare.
+				\item Should I include a page at the end specifying what things did I do, and what things didn't I do, and that way I don't have to do it during the paper?
+				\item make a nice looking table of the paramters of the model.
+			\end{itemize}
+		\newpage
+		\section{Appendix}
+				\subsection{Reversible enzyme kinetics}\label{subsed:reversible_enzyme_kinetics}
+				Outside the the bacterial cell, the energy resides in the form of chemical potential $ \mu $ held by the metabolites, and biochemical reactions inside the cell produce energy due to a diference in the chemical potentials of substrate and product. I assigned chemical potentials to each metabolite according to
+			\begin{linenomath*}	
+				\begin{equation}
+				\mu_{\beta} = E \left(1 - \sqrt{\frac{\beta-1}{m-1}}\right)
+				\end{equation}
+			\end{linenomath*}	
+			where $ \beta = 1, \dots, m $ and $ E $ is the energy of the most energetic metabolite.
+			%Justify this next paragraph 
+			I have chosen this chemical potential function because I hope to find papers where they explain that there is a hierarchy on the metabolite energetic spectrum. This means that the energy produced by a reaction of the type $ (\beta, \beta+1) $ decreases as you go down the hierarchy. Reactions involving metabolites situated higher in the hierarchy are more energetic than reactions that involve those lower in the hierarchy.\\
+			The rate at which a given chemical reaction transforms substrate into product is modeled using reversible Michaelis-Menten enzyme kinetics. Thus, the model considers chemical reactions where a substrate $ S $ binds to an enzyme $ E $ to form an enzyme-substrate complex $ ES $, which in turn produces a product $ P $, and recovers enzyme $ E $. 
+			\begin{linenomath*}	
+				\begin{equation}\label{eq:react_shceme}
+				E + S \rightleftharpoons ES \rightleftharpoons E + P
+				\end{equation}	
+			\end{linenomath*}
+			The choice of fully reverisble enzyme kinetics, instead of the traditional assumption of ireversibility in the second reaction, aims to capture more accurately the nature of biochemical reactions taking place in microbial communities. In these reactions the Gibbs energy change $ \Delta G $ is not always high, which implies that the reaction of product formation can reach equilibrium at a similar time scale as the formation of the complex \citep{Keener2008}. In this case, the traditional irreversible Michaelis-Menten scheme breaks down, and more elaborated frameworks, like the fully reversible one that this model offers, need to be used.\\
+			To comply with 2$ ^{nd} $ law of thermodynamics, the network $ G_{\alpha} $ is completely hierarchical, ie. the edges are unidirectional ($ x < y $), going from the more energetic, to the less energetic metabolite. Thus, for the reaction scheme in \ref{eq:react_shceme} and the imposed thermodynamic constraint only reactions where $ \Delta G^0 = \mu_P - \mu_S < 0 $ can take place.\\
+			With all the above considerations, the expression for the rate of reaction $ i $ possesed by strain $ \alpha $ is given below. A formal derivation of equation \ref{eq:rate_exp} can be found in \citet{Hoh2000}
+			\begin{linenomath*}	
+				\begin{equation}\label{eq:rate_exp}
+				q_{\alpha i} = \frac{q_m^{\alpha i}S_{\alpha}(1 - \theta_{\alpha})}{K_S^{\alpha i} + S_{\alpha}(1 + k_R^{\alpha i}\theta_{\alpha})}
+				\end{equation}
+			\end{linenomath*}
+			Here, $ \theta_{\alpha} $ measures how far is the reaction from equilibrium (0 being the furthest, and 1 being equilibrium).
+			\begin{linenomath*}	
+				\begin{equation}
+				\theta = \frac{[P]}{[S]K_{eq}}
+				\end{equation}	
+			\end{linenomath*}
+			where [   ] denote concentration and $ K_{eq} $ is the equilibrium constant
+			\begin{linenomath*}	
+				\begin{equation}
+				K_{eq}= \exp\left(\frac{-\Delta G^{0} - \eta\Delta G_{ATP}}{RT}\right)
+				\end{equation}
+			\end{linenomath*}
+			The energy produced by the reaction is then stored in the form of ATP molecules. In the model, $ \eta $ represents the moles of ATP molecules produced per mole of reaction. For a given reaction ($ x, y $) eta I calculate eta as 
+			\begin{linenomath*}	
+				\begin{equation}
+				\eta = \frac{y - x}{m}
+				\end{equation}
+			\end{linenomath*}
+			which represents the normalized metabolite gap between substrate and product of the reaction. Therefore, the higher the gap, the more energy will be stored.\\
+			\subsection{Table of parameter values and meaning}
+			\begin{table}[h]
+			\centering
+			\begin{tabular}{ |c|l|c| } 
+				\hline
+				Parameter & Meaning & Value \\
+				\hline
+				m &Number of metabolites &  100 \\ 
+				s &Number of strains &  10 \\ 
+				$ \Delta G_{ATP} $ &ATP Gibbs energy & $ 7.5\cdot 10^{4} $\\ 
+				$ \mu_0 $ & Most energetic metabolite &  $ 3\cdot 10^{4} $ \\ 
+				nATP &max$\left(\dfrac{\Delta G^{0}_{S\rightarrow P}}{\Delta G_{ATP}}\right)$ &  4 \\ 
+				$ \eta $ &Moles of ATP energy per reaction &  0.5  \\ 
+				$ q_m $ &Maximum reaction rate &  1 \\ 
+				$ K_S $ &Saturation constant &   0.1 \\ 
+				$ k_r $ &Reversibility constant &  10 \\ 
+				g & Growth factor & 1 \\ 
+				m  & Maintenance factor &   0.2$\cdot J_{grow}$ \\ 
+				$ \kappa $  & Externally supplied resource &  1 \\ 
+				$ \gamma $ &Dilution rate &   0.5 \\ 
+				$ N_{0}$ & Populations initial conditions &   (1, 1, ..., 1)\\ 
+				$ C_{0}$ & Concentrations initial condition &   (0, 0, ..., 0)\\
+				\hline
+			\end{tabular}
+			\caption{Parameter meanings and their values}
+			\label{tab:parameters}
+		\end{table}
+
+
+	\end{linenumbers}
+		\newpage
+		\bibliographystyle{agsm}
 		\bibliography{/Users/pablolechon/library}
 	\end{document}

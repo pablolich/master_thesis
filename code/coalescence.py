@@ -18,7 +18,7 @@ global R; R = 8.314462618 # J/(K mol)
 global DeltaGATP; DeltaGATP = 75e3 # J/mol
 global T; T = 298 # K 
 global E; E = 3e6 # J (Total energy contained in metabolites)
-global seed; seed = 600034
+global seed; seed = 69
 
 ## FUNCTIONS ##
 
@@ -46,12 +46,12 @@ def main(argv):
     #Number of metabolites
     m = 10
     #Number of strains
-    s = 75
+    s = 10 
     #Generate random uniformly distributed chemical potentials
     np.random.seed(seed)
     #mu = random_pack(E, m)
-    #mu = decreasing_pack(E, m)
-    mu = uniform_pack(E, m)
+    mu = decreasing_pack(E, m)
+    #mu = uniform_pack(E, m)
     #Set growth proportionality constant
     g = np.ones(s) 
     #Set supply and dilution rate of metabolites
@@ -77,7 +77,7 @@ def main(argv):
     #place)
     N_reac = comb(m, 2, exact = True)
     #Perform n_simul simulations
-    n_simul = 1
+    n_simul = 500
     #Generate reaction network for each strain
     tot = s*n_simul
     n_reac_s = np.zeros(tot, dtype = 'int')
@@ -109,7 +109,7 @@ def main(argv):
         np.random.seed(i+seed)
         #while num_reac == 0: 
         #    num_reac = round(np.random.beta(1,5)*N_reac)
-        num_reac = np.random.randint(1, N_reac+1)#m+1)
+        num_reac = np.random.randint(1, m + 1)#N_reac+1
         #Get reaction network
         reac_network = network(m, num_reac)
         #Store reaction network 
@@ -170,6 +170,7 @@ def main(argv):
             rates[j] = rate_matrix(network_t, eta, q_m, k_s, k_r, np.array(C0),
                                    mu, m)
             surplus[s*n + j] = jgrow(rates[j], eta) - maintenance_n[j]
+
         #Calculate level of cohesion of each species
         cohesion_matrix = facilitation_matrix(network_n, m)
         #Providing index
@@ -193,6 +194,9 @@ def main(argv):
         cohesion_corrected[s*n:s*(n+1)] = coh_ind_corr
         competition[s*n:s*(n+1)] = comp_indices
         auto_cohesion[s*n:s*(n+1)] = auto_cohesion_indices
+
+        #Calculate level of cohesion of each species
+        #Calculate level of cohesion of each species
         #Calculate net level of interactions species
         interactions = cohesion_matrix - comp_mat
         #Add lower elements to upper elements

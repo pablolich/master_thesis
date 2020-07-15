@@ -1,6 +1,6 @@
 sum#!/usr/bin/env python3
 
-__appname__ = '[coalescence_event.py]'
+__appname__ = '[s_plot.py]'
 __author__ = 'Pablo Lechon (plechon@ucm.es)'
 __version__ = '0.0.1'
 
@@ -44,7 +44,9 @@ def main(argv):
                           np.fromstring(x[1:-1], sep=' ', dtype = int))
     keys = list(composition.keys())
     #Number of metabolites
-    m = len([i for i in keys if i.startswith('m')])
+    #Metabolite list
+    met_list = [i for i in keys if i.startswith('m')]
+    m = len(met_list)
     s = len([i for i in keys if i.startswith('s')])
     #Vector of richnesses
     richness = np.unique(all_data.richness)
@@ -67,18 +69,19 @@ def main(argv):
 
     for r in richness:
         comp_long = all_data[all_data.richness == r]
-        #Get communities in team 1
-        communities_team_1 = comp_long[comp_long.team == 1]
-        #Communities in team -1
-        communities_team__1 = comp_long[comp_long.team == -1]
+        #How many communities do we have?
+        com_simul = np.unique(comp_long.n_simulation)
+        num_com = len(com_simul)
         #Get all pairs of competing communities between the two groups
-        all_pairs = list(product(np.unique(communities_team_1.n_simulation), 
-                                 np.unique(communities_team__1.n_simulation)))
+        all_pairs = list(combinations(com_simul, 2))
         ##How many communities do we have?
         #com_simul = np.unique(comp_long.n_simulation)
         #num_com = len(com_simul)
         #all_pairs = list(combinations(com_simul, 2))
         it = len(all_pairs)
+        n_pairs = round(0.01*it)
+        sample_ind = np.random.choice(np.arange(it, dtype = int), n_pairs)
+        some_pairs = [all_pairs[i] for i in sample_ind]
         #Initialize storing objects
         similarity = np.zeros(it)
         DF = np.zeros(it)
@@ -109,6 +112,28 @@ def main(argv):
                                   comp_c1['product'])
             net_C2 = vector2tuple(comp_c2['substrate'],
                                   comp_c2['product'])
+           # import ipdb; ipdb.set_trace(context = 20)
+           # #Calculate initial surplus for each strain given environment C0
+           # C0 = np.array(composition[composition.n_simulation == 760][met_list])[0]
+           # #Calculate initial surplus for each strain given environment C0
+           # for j in range(s):
+           #     network_t = network_n[j];
+           #     eta = Eta[j]
+           #     q_m = q_max[j]
+           #     k_s = ks[j]
+           #     k_r = kr[j]
+           #     rates[j] = rate_matrix(network_t, eta, q_m, k_s, k_r, np.array(C0),
+           #                            mu, m)
+           #     surplus[s*n + j] = jgrow(rates[j], eta) - maintenance_n[j]
+           # for j in range(s):
+           #     network_t = network_n[j];
+           #     eta = Eta[j]
+           #     q_m = q_max[j]
+           #     k_s = ks[j]
+           #     k_r = kr[j]
+           #     rates[j] = rate_matrix(network_t, eta, q_m, k_s, k_r, np.array(C0),
+           #                            mu, m)
+           #     surplus[s*n + j] = jgrow(rates[j], eta) - maintenance_n[j]
             #Facilitation matrix of initial community
             f_mat = facilitation_matrix(net_C1, m)
             f_mat2 = facilitation_matrix(net_C2, m)
@@ -220,7 +245,6 @@ def main(argv):
             #print('P2_1', P2_c1)
             #print('P2_2', P2_c2)
             #print('DeltaP2', DP2[i])
-            #import ipdb; ipdb.set_trace(context = 20)
             
             #if (similarity[i] > 0.5) and (similarity[i]< 0.75):
             #    import ipdb; ipdb.set_trace(context = 20)
@@ -240,31 +264,8 @@ def main(argv):
                                 'delP2':DP2})
         similarity_fitness = pd.concat([similarity_fitness, sim_fit])
 
-        tile_p = pd.DataFrame({'x':x, 'y':y, 'su':su, 
-                               'richness':np.repeat(r, len(x))})
-        xvec = np.unique(tile_p.x)
-        it = len(xvec)
-        proportion_1 = np.zeros(it)
-        for i in range(it):
-            column = tile_p[tile_p.x == i]
-            proportion_1[i] = sum(column.su == -1) - sum(column.su == 1)
 
-        sort_x =np.argsort(proportion_1)[::-1]
-        #sort_x is a vector that would sort the vector of proportions
-        #What is the index corresponing to the values of sort_x?
-        index = np.zeros(len(tile_p.x), dtype = int)
-        for i in range(it):
-            index[2*r*i:2*r*(i+1)] = np.arange(2*r*sort_x[i], 
-                                               2*r*sort_x[i]+2*r)
-
-        reorder = np.array(tile_p.su)[index]
-        tile_p.su = reorder
-        tile_plot = pd.concat([tile_plot, tile_p])
-
-
-    similarity_fitness.to_csv('../data/similarity_fitness_teams.csv')
-
-    tile_plot.to_csv('../data/tile_plot.csv')
+    similarity_fitness.to_csv('../data/similarity_fitness.csv')
 
 
     return 0

@@ -56,7 +56,6 @@ idx = inter_evol_df.strain.isin(survivors)
 colors = np.zeros(len(inter_evol_df))
 abundances = np.zeros(len(inter_evol_df))
 abundance_survivors = np.repeat(time_series[survivors].iloc[-1], t_points)
-import ipdb; ipdb.set_trace(context = 20)
 colors[idx] = 1
 abundances[idx] = abundance_survivors
 #Add colors to dataframe

@@ -13,25 +13,25 @@
 	\begin{itemize}
 	    \item Implemented first version of numerical integration of the model with the following parameters:\\
 	    \begin{center}
-	    	\begin{tabular}{ |l|c|c| } 
+	    	\begin{tabular}{ |c|l|c| } 
 	    		\hline
-	    		 Description & Symbol & Value \\
+	    		 Parameter & Meaning & Value \\
 	    		\hline
-	    		Number of metabolites & m & 100 \\ 
-	    		Number of strains & s & 10 \\ 
-	    		ATP Gibbs energy & $ \Delta G_{ATP} $ &$ 7.5\cdot 10^{4} $\\ 
-	    		Most energetic metabolite & $ \mu_0 $ & $ 3\cdot 10^{4} $ \\ 
-	    		max$\left(\dfrac{\Delta G^{0}_{S\rightarrow P}}{\Delta G_{ATP}}\right)$ & nATP & 4 \\ 
-	    		Moles of ATP energy per reaction & $ \eta $ & 0.5  \\ 
-	    		Maximum reaction rate & $ q_{max} $ & 1 \\ 
-	    		Saturation constant & $ K_s $ & 0.1 \\ 
-	    		Reversibility constant & $ k_r $ & 10 \\ 
-	    		Growth factor & g & 1 \\ 
-	    		Maintenance factor & m  &  0.2$\cdot J_{grow}$ \\ 
-	    		Externally supplied resource & $ \kappa $  &  1 \\ 
-	    		Dilution rate & $ \gamma $ &  0.5 \\ 
-	    		Populations initial conditions & $ N_{0}$ &  (1, 1, ..., 1)\\ 
-	    		Concentrations initial condition & $ C_{0}$ &  (0, 0, ..., 0)\\
+	    		m &Number of metabolites &  100 \\ 
+	    		s &Number of strains &  10 \\ 
+	    		$ \Delta G_{ATP} $ &ATP Gibbs energy & $ 7.5\cdot 10^{4} $\\ 
+	    		$ \mu_0 $ & Most energetic metabolite &  $ 3\cdot 10^{4} $ \\ 
+	    		nATP &max$\left(\dfrac{\Delta G^{0}_{S\rightarrow P}}{\Delta G_{ATP}}\right)$ &  4 \\ 
+	    		$ \eta $ &Moles of ATP energy per reaction &  0.5  \\ 
+	    		$ q_{max} $ &Maximum reaction rate &  1 \\ 
+	    		$ K_s $ &Saturation constant &   0.1 \\ 
+	    		$ k_r $ &Reversibility constant &  10 \\ 
+	    		g & Growth factor & 1 \\ 
+	    		m  & Maintenance factor &   0.2$\cdot J_{grow}$ \\ 
+	    		$ \kappa $  & Externally supplied resource &  1 \\ 
+	    		$ \gamma $ &Dilution rate &   0.5 \\ 
+	    		$ N_{0}$ & Populations initial conditions &   (1, 1, ..., 1)\\ 
+	    		$ C_{0}$ & Concentrations initial condition &   (0, 0, ..., 0)\\
 	    		\hline
 	    	\end{tabular}
 	    \end{center}

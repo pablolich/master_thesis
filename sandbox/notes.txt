@@ -239,3 +239,19 @@ Things to do for next weeek
 	8. Try the diversification option
 	9. Plot heatmap with number of reactions, and where are they in the metabolite space
 
+Jul 06,2020
+
+Back to my work. Things I want to do in this last two weeks are stated below.
+	
+	1. Plot community competition against community facilitation and choose comunities from the top 10 % of those groups, make them compete, to verify that facilitative communities are more fit than not facilitative communities. 
+	2. Try one last plot of community similarity against differrence in community fitness. 
+	3. Make plots.
+	4. In the plot of interaction during community assembly, draw the mean of non zero elements only.
+
+	
+
+Jul 07,2020
+
+I have created team cap and team iron man. Now I need to make them compete. However, things are not as expected. Revise tomorrow with only one community, and then two, that facilitation and competition vectors are being aggregated as expected. To check that my results are okay, When I calculate the mean of cohesion and for competition for one community by hand, the difference should be negative if team is cap (-1), and positive if team is iron man (1)
+
+

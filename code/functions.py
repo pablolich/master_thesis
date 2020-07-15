@@ -340,15 +340,18 @@ def uniform_pack(E, m):
     return np.linspace(E,0,m)
 
 def second_order_polynomial(x):
-        return(-x**0.1)
+        return(-x**0.5)
 
 def decreasing_pack(E, m):
     '''Generate quadraticaly decreasing chemical potentials'''
-    x = np.linspace(0,1,m)
-    distances = second_order_polynomial(x)+1
-    d_norm = E*distances/sum(distances)
-    mu = [E - sum(d_norm[0:i]) for i in range(len(d_norm))]
-    return np.array(mu)
+    #x = np.linspace(0,1,m)
+    #import ipdb; ipdb.set_trace(context = 20)
+    #distances = second_order_polynomial(x)+1
+    #d_norm = E*distances/sum(distances)
+    #mu = [E - sum(d_norm[0:i]) for i in range(len(d_norm))]
+    x = np.arange(m)
+    mu = E*(1 - np.sqrt(x/(m)))
+    return mu
 
 def rate_matrix(network, Eta, q_max, ks, kr, C, mu, m):
     '''Calculate matrix of reaction rates'''
@@ -439,14 +442,20 @@ def facilitation_matrix(networks, m):
         #Get shared elements
         shared = np.intersect1d(prod_j, sub_i)
         #Calculate reliability of strain i in each of its substrates
-        rel = reliability_dict(sub_i)
-        #Get reliability in facilitated metabolites for species j
-        rel_fac = [rel[str(i)] for i in shared] 
+        rel_subs = reliability_dict(sub_i, m, facilitation = False)
+        #Get reliability in facilitated substrates for species i
+        rel_fac = [rel_subs[str(i)] for i in shared] 
+        #Get how much of the metabolites of the other are being facilitated
+        rel_prods = reliability_dict(prod_j, m, facilitation = False)
+        #Get reliablility in facilitated products for species j
+        rel_fac_prod = [rel_prods[str(i)] for i in shared]
+        #Sum to get interaction level
+        tot_facilitation = 0.5*(np.array(rel_fac) + np.array(rel_fac_prod))
         ##Autofacilitation is cheating
         #if i==j:
         #    sign = 0#-1
         #Facilitation degree between species i and j
-        fac_mat[i,j] = sum(rel_fac) 
+        fac_mat[i,j] = sum(tot_facilitation) 
 
     return fac_mat
 
@@ -462,24 +471,34 @@ def competition_matrix(networks, m):
     for i, j in pairs:
         #Get number of reactions of strains i and j.
         n_ij = tuple([len(networks[i][0]), len(networks[j][0])])
-        #Get minimum of these numbers
+        #get minimum of these numbers
         mn_ij = min(n_ij)
-        #Get used substrates by species i and products used by species j
+        #get used substrates by species i and products used by species j
         sub_i = networks[i][0]
         sub_j = networks[j][0]
-        #Get shared elements
+        #get shared elements
         shared = np.intersect1d(sub_i, sub_j)
-        #Calculate reliability of strain i in each of its metaboltes
-        rel = reliability_dict(sub_i)
-        #Get reliability in competing metabolites with species j
+        #calculate reliability of strain i in each of its metaboltes
+        rel = reliability_dict(sub_i, m)
+        #get reliability in competing metabolites with species j
         rel_comp = [rel[str(i)] for i in shared] 
+        #calculate reliablitiy of strain j in each of its metabllites
+        rel_j = reliability_dict(sub_j, m)
+        #get reliability in competing metabolites with species i
+        rel_comp_j = [rel_j[str(i)] for i in shared] 
+        #sum to get total competition level, and normalize
+        rel_comp_tot = 0.5*(np.array(rel_comp) + np.array(rel_comp_j))
         #Facilitation degree between species i and j
-        comp_mat[i,j] = sum(rel_comp)
+        comp_mat[i,j] = sum(rel_comp_tot)
 
     return comp_mat
 
-def reliability_dict(vec):
+def reliability_dict(vec, m, facilitation = False):
     '''Calculates the normalized index of repetition of each element in vec'''
+    if facilitation:
+        #Eliminate elements of vector that cannot ever be facilitated
+        #ie, first and last metabolite.
+        vec = np.delete(vec, np.where((vec == 0) | (vec == m-1))[0])
     #Initialize keys of dictionary
     keys = [str(i) for i in np.unique(vec)]
     #Calculate number of repetitions of each element
