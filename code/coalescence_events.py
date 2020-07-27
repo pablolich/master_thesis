@@ -1,4 +1,4 @@
-sum#!/usr/bin/env python3
+#!/usr/bin/env python3
 
 __appname__ = '[coalescence_event.py]'
 __author__ = 'Pablo Lechon (plechon@ucm.es)'
@@ -102,8 +102,6 @@ def main(argv):
             num_c1 = len(comp_c1)
             num_c2 = len(comp_c2)
             s = num_c1 + num_c2
-            #Calculate fitness of initial community
-            F_C1 = np.unique(comp_c1.F) 
             #Obtain reaction networks  of c1 as a list of tuples
             net_C1 = vector2tuple(comp_c1['substrate'],
                                   comp_c1['product'])

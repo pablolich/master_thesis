@@ -84,23 +84,10 @@ def main(argv):
     maintenance = np.zeros(tot)
     #Prealocate vector for storing initial resource surpluses
     surplus = np.zeros(tot)
-    #Prealocate vector for storing cohesion indices
-    cohesion = np.zeros(tot)
     #Prealocate vector for storing facilitation indices
     facilitation = np.zeros(tot)
     #Prealocate vector for storing competition indices
     competition = np.zeros(tot)
-    #Prealocate vector for storing facilitation indices
-    providing = np.zeros(tot)
-    #The corrected version
-    cohesion_corrected = np.zeros(tot)
-    #Prealocate vector for storing competition indices
-    competition = np.zeros(tot)
-    #Prealocate vector for storing auto_cohesion indices
-    auto_cohesion = np.zeros(tot)
-    #Prealocate vector for storing new cohesion and competition indices
-    coh = np.zeros(tot)
-    comp = np.zeros(tot)
     #Prealocate container of all networks 
     tot_reac_network = tot*[0]
     pbar = ProgressBar()
@@ -124,7 +111,7 @@ def main(argv):
             rand_cost = np.random.normal(0,1)
         #Free energy gap of reactions
         mult = sum(tot_reac_network[i][1]-tot_reac_network[i][0])
-        maintenance[i] = xi0*mult*(1+epsilon*rand_cost)
+        maintenance[i] = xi0*mult#*(1+epsilon*rand_cost)
 
     #Integrate model#
     #################
@@ -142,11 +129,7 @@ def main(argv):
     empty_deg = [[] for i in range(m)]
     zn = np.array(empty_z)
     zn_stable = np.zeros(shape = (n_simul, m+s))
-    Fn_stable = np.zeros(n_simul)
     fn_stable = np.zeros(n_simul)
-    degree_n = np.array(empty_deg)
-    betweenness_n = np.array(empty_deg)
-    F_n = np.array([])
     tn = np.array([])
     n_label = np.array([])
 
@@ -176,39 +159,20 @@ def main(argv):
 
         #Calculate level of cohesion of each species
         cohesion_matrix = facilitation_matrix(network_n, m)
-        #Providing index
-        providing_index = np.sum(cohesion_matrix, axis = 0)
-        #Facilitation index
-        facilitation_index = np.sum(cohesion_matrix, axis = 1)
-        #Auto cohesion indices
-        auto_cohesion_indices = np.diag(cohesion_matrix)
-        cohesion_indices = cooperation_index(cohesion_matrix)
-        coh_ind_corr = cohesion_indices - n_reac_s[s*n:s*(n+1)] + auto_cohesion_indices
         #Calculate the level of competition of each species
         comp_mat = competition_matrix(network_n, m)
-        comp_indices = sum(comp_mat)
         #Calculate cohesion-competition
-        coh[s*n:s*(n+1)] = np.sum(cohesion_matrix, axis = 1)
-        comp[s*n:s*(n+1)] = np.sum(comp_mat, axis = 1)
-        #Store cohesion, autocohesion and competition indices
-        cohesion[s*n:s*(n+1)] = cohesion_indices
-        facilitation[s*n:s*(n+1)] = facilitation_index
-        providing[s*n:s*(n+1)] = providing_index
-        cohesion_corrected[s*n:s*(n+1)] = coh_ind_corr
-        competition[s*n:s*(n+1)] = comp_indices
-        auto_cohesion[s*n:s*(n+1)] = auto_cohesion_indices
-
-        #Calculate level of cohesion of each species
-        #Calculate level of cohesion of each species
+        facilitation[s*n:s*(n+1)] = np.sum(cohesion_matrix, axis = 1)
+        competition[s*n:s*(n+1)] = np.sum(comp_mat, axis = 1)
         #Calculate net level of interactions species
         interactions = cohesion_matrix - comp_mat
-        #Add lower elements to upper elements
-        triu = np.triu(interactions)
-        tril = np.tril(interactions)
-        total_interactions = triu + tril.transpose()
-        sum_tot_inter = [sum(total_interactions[i,:]) + 
-                         sum(total_interactions[:,i])
-                         for i in range(s)]
+        ##Add lower elements to upper elements
+        #triu = np.triu(interactions)
+        #tril = np.tril(interactions)
+        #total_interactions = triu + tril.transpose()
+        #sum_tot_inter = [sum(total_interactions[i,:]) + 
+        #                 sum(total_interactions[:,i])
+        #                 for i in range(s)]
          
         sol = solve_ivp(lambda t,z: model(t,z,s,m,kappa,gamma,network_n,mu,Eta,
                         q_max,ks,kr,g,maintenance_n), tspan, z0, 
@@ -227,28 +191,25 @@ def main(argv):
         #Create community network and evaluate centrality measures for each
         #timepoint
         #Prealocate storing elements
-        degree_time = np.zeros(shape=(m, t_points))
-        betweenness_time = np.zeros(shape=(m, t_points))
-        F = np.zeros(t_points)
-        #Don't worry about divergent cases
-        if any(z[:, -1]>1e4):
-            pass
-        else:
-            F = F_calculator(z, t, m, s, network_n)
-            for i in range(t_points):
-                #Abundance of each strain at timepoint i
-                abundances = z[0:s,i]
-                #Community networkx for those abundances
-                community_network = networks2community(network_n, abundances, 
-                                                       s, m) 
-                G = community_network 
-                layout = nx.circular_layout(G)
-                #Calculate size of edges (importance of metabolites)
-                degree = list(dict(G.degree(weight = 'weight')).values())
-                betweenness = nx.betweenness_centrality(G, weight = 'weight')
-                betweenness = list(dict(betweenness).values())
-                degree_time[:,i] = degree
-                betweenness_time[:,i] = betweenness
+        ##Don't worry about divergent cases
+        #if any(z[:, -1]>1e4):
+        #    pass
+        #else:
+        #    F = F_calculator(z, t, m, s, network_n)
+        #    for i in range(t_points):
+        #        #Abundance of each strain at timepoint i
+        #        abundances = z[0:s,i]
+        #        #Community networkx for those abundances
+        #        community_network = networks2community(network_n, abundances, 
+        #                                               s, m) 
+        #        G = community_network 
+        #        layout = nx.circular_layout(G)
+        #        #Calculate size of edges (importance of metabolites)
+        #        degree = list(dict(G.degree(weight = 'weight')).values())
+        #        betweenness = nx.betweenness_centrality(G, weight = 'weight')
+        #        betweenness = list(dict(betweenness).values())
+        #        degree_time[:,i] = degree
+        #        betweenness_time[:,i] = betweenness
                 #nx.draw_networkx(G, layout, node_size = degree)
                 #plt.pause(0.01)
                 #plt.close()
@@ -261,11 +222,6 @@ def main(argv):
         #Store
         zn = np.concatenate([zn, z], axis = 1)
         zn_stable[n,:] = zn[:,-1]
-        F_n = np.concatenate([F_n, F])
-        Fn_stable[n] = F_n[-1]
-        degree_n = np.concatenate([degree_n, degree_time], axis = 1)
-        betweenness_n = np.concatenate([betweenness_n, betweenness_time],
-                                       axis = 1)
         tn = np.concatenate([tn, t])
         n_label = np.concatenate([n_label, n*np.ones(len(t), dtype = int)])
         
@@ -278,14 +234,8 @@ def main(argv):
                             pd.DataFrame({'maintenance':maintenance, 
                                           'surplus':surplus,
                                           'n_reac':n_reac_s, 
-                                          'cohesion':cohesion,
-                                          'providing':providing,
                                           'facilitation':facilitation,
-                                          'cohesion_corr':cohesion_corrected,
-                                          'competition':competition,
-                                          'autocohesion':auto_cohesion, 
-                                          'coh':coh,
-                                          'comp':comp})], 
+                                          'competition':competition})], 
                             axis = 1)
     df_network.insert(0, 'strain', np.tile(np.arange(s), n_simul))
     df_network.insert(0, 'n_simulation', np.repeat(np.arange(n_simul), s))

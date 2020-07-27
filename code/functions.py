@@ -426,19 +426,9 @@ def facilitation_matrix(networks, m):
     #Preallocate facilitation matrix
     fac_mat = np.zeros(shape=(s,s))
     for i, j in pairs:
-        ##Initialize sign of interaction for iteration i,j
-        #sign = 1
-        #Get products of species j and used substrates by species i
+        #Get products of species j and substrates by species i
         sub_i = networks[i][0]
         prod_j = networks[j][1]
-        ##Remove the last metabolite from products and the first metabolite from
-        ##substrates, since these can't be shared. 
-        #prod_i = np.delete(prod_i, np.where(prod_i == m-1))
-        #sub_j = np.delete(sub_j, np.where(sub_j == 0))
-        #Get number of substrates of strains i and products of strain j.
-        #n_ij = tuple([len(prod_i), len(sub_j)])
-        ##Use the minimum of these numbers as the normalization constant.
-        #mn_ij = min(n_ij)
         #Get shared elements
         shared = np.intersect1d(prod_j, sub_i)
         #Calculate reliability of strain i in each of its substrates
@@ -451,9 +441,6 @@ def facilitation_matrix(networks, m):
         rel_fac_prod = [rel_prods[str(i)] for i in shared]
         #Sum to get interaction level
         tot_facilitation = 0.5*(np.array(rel_fac) + np.array(rel_fac_prod))
-        ##Autofacilitation is cheating
-        #if i==j:
-        #    sign = 0#-1
         #Facilitation degree between species i and j
         fac_mat[i,j] = sum(tot_facilitation) 
 
@@ -469,10 +456,6 @@ def competition_matrix(networks, m):
     #Preallocate facilitation matrix
     comp_mat = np.zeros(shape=(s,s))
     for i, j in pairs:
-        #Get number of reactions of strains i and j.
-        n_ij = tuple([len(networks[i][0]), len(networks[j][0])])
-        #get minimum of these numbers
-        mn_ij = min(n_ij)
         #get used substrates by species i and products used by species j
         sub_i = networks[i][0]
         sub_j = networks[j][0]

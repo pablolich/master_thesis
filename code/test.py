@@ -3,8 +3,10 @@ import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 
-time_series = pd.read_csv('../data/coal_time_series.csv', index_col = 0)
-networks = pd.read_csv('../data/coal_network.csv', index_col = 0)
+time_series = pd.read_csv('../data/coal_time_series_interaction_evolution.csv',
+                          index_col = 0)
+networks = pd.read_csv('../data/coal_network_interaction_evolution.csv', 
+                       index_col = 0)
 
 #Get number of strains
 s = len(networks)
