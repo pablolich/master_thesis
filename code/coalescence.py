@@ -77,7 +77,7 @@ def main(argv):
     #place)
     N_reac = comb(m, 2, exact = True)
     #Perform n_simul simulations
-    n_simul = 2000 
+    n_simul = 100 
     #Generate reaction network for each strain
     tot = s*n_simul
     n_reac_s = np.zeros(tot, dtype = 'int')
@@ -124,7 +124,7 @@ def main(argv):
             rand_cost = np.random.normal(0,1)
         #Free energy gap of reactions
         mult = sum(tot_reac_network[i][1]-tot_reac_network[i][0])
-        maintenance[i] = xi0*mult*(1+epsilon*rand_cost)
+        maintenance[i] = xi0*mult#*(1+epsilon*rand_cost)
 
     #Integrate model#
     #################
@@ -149,6 +149,14 @@ def main(argv):
     F_n = np.array([])
     tn = np.array([])
     n_label = np.array([])
+    zero_data = np.zeros(shape=(2*s*n_simul,2+s))
+    #Initialize dataframe to store interaction matrix before and after assembly
+    names_strains = ['s' + str(i) for i in range(s)]
+    columns = ['n_simulation', 'extant'] + names_strains
+    interactions_df = pd.DataFrame(zero_data, columns=columns)
+    interactions_df.n_simulation = np.repeat(np.arange(n_simul), 2*s)
+    interactions_df.random_assembled = np.tile(np.repeat(np.array([1,0]), s), 
+                                               n_simul)
 
     pbar = ProgressBar()
     for  n in pbar(range(n_simul)):
@@ -202,6 +210,8 @@ def main(argv):
         #Calculate level of cohesion of each species
         #Calculate net level of interactions species
         interactions = cohesion_matrix - comp_mat
+        #Save the matrix of interactions before assembly
+        interactions_df.iloc[s*n:s*(n+1), 2:2+s] = interactions
         #Add lower elements to upper elements
         triu = np.triu(interactions)
         tril = np.tril(interactions)
@@ -261,6 +271,10 @@ def main(argv):
         #Store
         zn = np.concatenate([zn, z], axis = 1)
         zn_stable[n,:] = zn[:,-1]
+        #Get a binary vector of 1 for surviving species and 0 for extinct ones
+        survivors = [int(i) for i in zn_stable[n,0:s]>1]
+        #Add this vector to interactions_df
+        interactions_df.iloc[s*(n+1):s*(n+2), 1] = survivors
         F_n = np.concatenate([F_n, F])
         Fn_stable[n] = F_n[-1]
         degree_n = np.concatenate([degree_n, degree_time], axis = 1)

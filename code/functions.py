@@ -589,9 +589,8 @@ def interaction_evolution(time_series, networks, m, t_points):
     networks['product'] = networks['product'].apply(lambda x: 
                           np.fromstring(x[1:-1], sep=' ', dtype = int))
     #Calculate community interaction measures at extinction points. 
-    pbar = ProgressBar()
     j = 0
-    for i in pbar(t_points):
+    for i in t_points:
         #Get present and extinct species, those that are greater than 1e-3
         present = np.where(time_series.iloc[i+1,2:]>=1)[0]
         extinct = np.where(time_series.iloc[i+1,2:]<1)[0]
@@ -603,7 +602,7 @@ def interaction_evolution(time_series, networks, m, t_points):
         #Calculate interaction matrix for this set of reaction networks
         f_mat = facilitation_matrix(networks_tu, m)
         c_mat = competition_matrix(networks_tu, m)
-        interactions = 0.5*(1+(f_mat - c_mat))
+        interactions = f_mat - c_mat
         f_evol[j,present] = np.mean(f_mat, axis = 1)
         c_evol[j,present] = np.mean(c_mat, axis = 1)
         inter_evol[j,present] = np.mean(interactions, axis = 1)
