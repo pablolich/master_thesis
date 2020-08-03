@@ -1,6 +1,7 @@
 require(ggplot2)
 library(reshape2)
 library(wesanderson)
+require(cowplot)
 source('coal_analysis_functions.R')
 rm(list=ls())
 dev.off()
@@ -46,6 +47,11 @@ network = read.table('../data/coal_network.csv', sep = ',', header = T,
 network$strain = paste('s', network$strain, sep = '')
 #Merge with surv_comp_long
 all_data = merge(surv_comp_long, network, by = c('n_simulation', 'strain'))
+#Get facilitation and competition indices each community
+facilitation = aggregate(all_data[,16], list(all_data$n_simulation), mean)
+competition = aggregate(all_data[,17], list(all_data$n_simulation), mean)
+#Assign each community to a group based on their comp and fac levels.
+colors = distance(competition$x, facilitation$x, 1.4, 0.2)
 #Get a unique value for richness per simulation
 unique_richness = non_contiguous(all_data)
 #Create a vector of teams for members in the community
@@ -219,3 +225,210 @@ tot = ggarrange(model_example, community_reaction_network,
                 font.label = list(size = 25))
 
 ggsave('../results/community_assembly_plots.pdf', plot = tot, height = 10, width = 10)
+
+##########################################################################################
+
+#Evolution of interactions during community coalescence
+
+#Load data
+inter_evol = read.table('../data/interaction_evolution.csv', sep = ',', header = T,
+                        row.names = 1)
+
+
+#Get rid of 0 and high times for nice plot
+#Get rid of 0 so tha the mean doesn't go down artificially
+inter_evol_no0 = inter_evol[!(inter_evol$survivor == 0 & 
+                              inter_evol$interaction == 0 |
+                              inter_evol$t > 500),]
+
+data = aggregate(inter_evol_no0[,4:6], 
+                 list(inter_evol_no0$t,
+                      inter_evol_no0$n_simulation), 
+                 sum)
+
+#Bin time for nice plotting
+h_t = hist(data$Group.1, 
+           breaks=seq(floor_dec(min(data$Group.1, 1)),
+                      ceiling_dec(max(data$Group.1), 1), 
+                      length.out = 70))
+#Find the interval containing each element of delP2 in breaks.
+ind_av = findInterval(data$Group.1, h_t$breaks)
+#Bin similar data together
+time = rep(0, length(unique(ind_av)))
+interaction = rep(0, length(unique(ind_av)))
+facilitation = rep(0, length(unique(ind_av)))
+competition = rep(0, length(unique(ind_av)))
+interaction_error = rep(0, length(unique(ind_av)))
+j = 1
+for (i in (unique(ind_av))){
+  #Average equivalent measurements by bin
+  av_data = data[which(ind_av == i),]
+  time[j] = median(av_data$Group.1)
+  interaction[j] = median(av_data$interaction)
+  facilitation[j] = median(av_data$facilitation)
+  competition[j] = median(av_data$competition)
+  interaction_error[j] = sd(av_data$interaction)
+  j = j+1
+}
+averaged_data = data.frame('time'= time, 
+                           'interaction' = interaction,
+                           'competition' = competition,
+                           'facilitation' = facilitation)
+plot(time, interaction)
+plot(time, competition, col = 'red')
+points(time, facilitation, col = 'green')
+
+interaction_plot = ggplot(data = averaged_data, aes(x = time, y = interaction))+
+  geom_point(colour = "#F21A00", size = 6)+
+  theme(panel.background = element_blank(), 
+        panel.border = element_rect(colour = "black", fill=NA, size = 2),
+        axis.text = element_text(size = 25), 
+        axis.title = element_text(size = 30),
+        aspect.ratio = 0.7)+
+  scale_x_continuous(breaks = c(0, 250, 500))+
+  scale_y_continuous(breaks = c(-1,-0.55,-0.1),
+                     labels = c('-1','-0.5', '0'))+
+  labs(x = 't [a.u.]', 
+       y = expression(paste(symbol("\341"),Theta,symbol("\361"))))
+  
+#Plot inset
+subplot_data = melt(averaged_data, id.vars = c('time'))
+subplot_data = subplot_data[subplot_data$variable != 'interaction',]
+inset_plot = ggplot(data = subplot_data, aes(x = time, y = value,
+                                colour = as.factor(variable)))+
+  geom_point(size = 3)+
+  theme_minimal()+
+  theme(panel.background = element_blank(), 
+        panel.grid = element_blank(),
+        panel.border = element_rect(colour = "black", fill=NA, size = 1),
+        axis.title = element_blank(),
+        axis.text = element_text(size = 20), 
+        axis.ticks = element_line(),
+        legend.position = c(0.8, 0.7),
+        legend.text = element_text(size = 20),
+        legend.title = element_blank(),
+        legend.background = element_blank(),
+        legend.key = element_blank(),
+        legend.spacing.x = unit(0, 'mm'),
+        aspect.ratio = 0.7)+
+   guides(color = guide_legend(override.aes = list(size=6)))+
+   scale_x_continuous(breaks = c(0, 250, 500),
+                      limits = c(0,500),
+                      expand = c(0.02,0.02))+
+   scale_y_continuous(breaks = c(1.5,2.5,3.5))+
+  scale_colour_manual(values = c("#EBCC2A", "#3B9AB2"),
+                      name = "", labels = c(expression(paste(symbol("\341"),
+                                                             italic(C),
+                                                             symbol("\361"))), 
+                                             expression(paste(symbol("\341"),
+                                                              italic(F),
+                                                              symbol("\361")))))+
+  labs(fill = '')
+
+ggdraw() +
+  draw_plot(interaction_plot) +
+  draw_plot(inset_plot, x = .34, y = .22, width = .75, height = .31) +
+  ggsave(filename = '../results/interaction_evolution_plots.pdf', height = 8, width = 10 )
+  
+
+###############################################################################################
+
+#Plot network of bacteria before and after the assembly
+
+
+#Things I want to do:
+#1.   Order vertices as a function of their strength
+#2.   Size of the circle represents the number of reactions that it has.
+
+
+#Load data
+inter_random_df = read.table('../data/interaction_random.csv', sep = ',',
+                          header = T)
+inter_assembled_df = read.table('../data/interaction_assembled.csv', sep = ',',
+                             header = T)
+
+#Plot random and assembled networks for all simulations
+pb = txtProgressBar(1, length(unique(inter_random_df$n_simulation)), style=3)
+pdf("../results/interactions.pdf") 
+for (i in unique(inter_random_df$n_simulation)){
+  #Transform to matrix
+  inter_random_i = data.matrix(inter_random_df[inter_random_df$n_simulation==i,2:ncol(inter_random_df)])
+  #Get number of survivors 
+  n_surv = length(all_data$strain[all_data$n_simulation == i])
+  #Get rid of 0 in the assembled matrix
+  inter_assembled_i = data.matrix(inter_assembled_df[inter_assembled_df$n_simulation == i, 2:ncol(inter_assembled_df)])[0:n_surv,0:n_surv]
+  if (length(inter_assembled_i) == 0){
+    next
+  }
+  #Get rid of column names
+  colnames(inter_random_i) = NULL
+  colnames(inter_assembled_i) = NULL
+  #Create graph
+  g_random = graph_from_adjacency_matrix(inter_random_i, mode = 'undirected',
+                                         weighted = T)
+  #Get a pallette with as many colours as different weights
+  n_weights = length(E(g_random)$weight)
+  colours = wes_palette('Zissou1', type = 'continuous', n = n_weights)
+  #Get indices that would order the array of weitghts
+  ordered_index = order(order(E(g_random)$weight, decreasing = F))
+  #Create a color dataframe
+  color_df = data.frame(weight = E(g_random)$weight, 
+                        color = colours[ordered_index])
+  #Get colors for edges
+  E(g_random)$color = colours[ordered_index]
+  #Add width to edges based in the weights
+  E(g_random)$width = 5*range01(E(g_random)$weight)
+  #Color for nodes
+  #Get a pallette with as many colours as different node_strengths
+  degree_ = strength(g_random)
+  n_nodes = length(degree_)
+  colours_nodes = wes_palette('Zissou1', type = 'continuous', n = n_nodes)
+  #Get indices that would order the array of node strengths
+  #Get size of nodes.
+  reac_number = network$n_reac[network$n_simulation == i]
+  V(g_random)$size = 3*(5+reac_number)
+  ordered_index = order(order(degree_, decreasing = F))
+  V(g_random)$color = colours_nodes[ordered_index]
+  #Add labels to nodes
+  V(g_random)$label = colnames(inter_random_df)[2:ncol(inter_random_df)]
+  #Plot
+  par(mfrow=c(2,1),
+      mar = c(2, 0, 0, 0),
+      oma = c(0,0,0,0),
+      xpd = NA)
+  plot(g_random, layout = layout_in_circle(g_random, order = order(degree_,
+                                                                   decreasing = T)),
+       vertex.label.cex = 1.8)
+  
+  #Create assembled grapph
+  g_assembled = graph_from_adjacency_matrix(inter_assembled_i, mode = 'undirected',
+                                            weighted = T)
+  #Add width to edges based in the weights
+  E(g_assembled)$width = 5*range01(E(g_assembled)$weight)
+  #Get colors for edges
+  indices = match(E(g_assembled)$weight, color_df$weight)
+  E(g_assembled)$color = as.character(color_df$color[indices])
+  #Color for nodes
+  #Get a pallette with as many colours as different node_strengths
+  degree_ = strength(g_assembled)
+  n_nodes = length(degree_)
+  colours_nodes = wes_palette('Zissou1', type = 'continuous', n = n_nodes)
+  #Get indices that would order the array of node strengths
+  ordered_index = order(order(degree_, decreasing = F))
+  #Assign colours
+  V(g_assembled)$color = colours_nodes[ordered_index]
+  #Get size of nodes.
+  reac_number = all_data$n_reac[all_data$n_simulation == i]
+  V(g_assembled)$size = 3*(5+reac_number)
+  #Get labels of surviving sepecies
+  surv_labels = as.character(all_data$strain[all_data$n_simulation == i])
+  #Add labels to nodes
+  V(g_assembled)$label = surv_labels
+  #Plot
+  plot(g_assembled, 
+       layout = layout_in_circle(g_assembled, 
+                                 order = order(degree_, decreasing = T)),
+       vertex.label.cex = 1.8)
+  setTxtProgressBar(pb, i)
+}
+dev.off()

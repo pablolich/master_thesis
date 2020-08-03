@@ -22,7 +22,7 @@ time_series = time_series.drop(columns = junk)
 #Get number of strains
 s = len(time_series.keys())-2
 #Get number of simulations
-n_simul = len(np.unique(time_series.n_simulation))-1990
+n_simul = len(np.unique(time_series.n_simulation))
 #Filter networks
 keys = list(networks.keys())
 junk = [i for i in keys if not (i.startswith('sub') or i.startswith('prod'))]
@@ -37,7 +37,7 @@ f_evol_df = pd.DataFrame(columns = column_names)
 surv_vector = np.array([])
 pbar = ProgressBar()
 print('Calculating evolution of interactions during community assembly')
-for i in (range(n_simul)):
+for i in pbar(range(n_simul)):
     time_series_i = time_series[time_series.n_simulation == i].reset_index(drop = True)
     networks_i = networks.iloc[i*s:(i+1)*s, :].reset_index(drop = True)
     #Get evolution of richness during community assembly
@@ -90,21 +90,22 @@ f_evol_df = f_evol_df.drop(columns = ['strain', 'n_simulation', 't'])
 c_evol_df = c_evol_df.drop(columns = ['strain', 'n_simulation', 't'])
 
 inter_evol_df = pd.concat([inter_evol_df, f_evol_df, c_evol_df], axis = 1)
+inter_evol_df = inter_evol_df.sort_values(by = ['n_simulation', 'strain'])
 #Add column of survivors
 inter_evol_df['survivor'] = surv_vector
-import ipdb; ipdb.set_trace(context = 20)
 
-#Get boolean where the value id (strain id) matches survivors
-idx = inter_evol_df.strain.isin(survivors)
-#Once I get survivors, assign a vector for colors
-colors = np.zeros(len(inter_evol_df))
-abundances = np.zeros(len(inter_evol_df))
-abundance_survivors = np.repeat(time_series[survivors].iloc[-1], t_points)
-colors[idx] = 1
-abundances[idx] = abundance_survivors
-#Add colors to dataframe
-inter_evol_df['survivor'] = colors
-inter_evol_df['abundance'] = abundances
-inter_evol_df.insert(0, 't', np.tile(t_ext, s))
 #Save dataframe
 inter_evol_df.to_csv('../data/interaction_evolution.csv')
+
+##Get boolean where the value id (strain id) matches survivors
+#idx = inter_evol_df.strain.isin(survivors)
+##Once I get survivors, assign a vector for colors
+#colors = np.zeros(len(inter_evol_df))
+#abundances = np.zeros(len(inter_evol_df))
+#abundance_survivors = np.repeat(time_series[survivors].iloc[-1], t_points)
+#colors[idx] = 1
+#abundances[idx] = abundance_survivors
+##Add colors to dataframe
+#inter_evol_df['survivor'] = colors
+#inter_evol_df['abundance'] = abundances
+#inter_evol_df.insert(0, 't', np.tile(t_ext, s))

@@ -77,7 +77,7 @@ def main(argv):
     #place)
     N_reac = comb(m, 2, exact = True)
     #Perform n_simul simulations
-    n_simul = 100 
+    n_simul = 2000 
     #Generate reaction network for each strain
     tot = s*n_simul
     n_reac_s = np.zeros(tot, dtype = 'int')
@@ -149,14 +149,14 @@ def main(argv):
     F_n = np.array([])
     tn = np.array([])
     n_label = np.array([])
-    zero_data = np.zeros(shape=(2*s*n_simul,2+s))
+    zero_data = np.zeros(shape=(s*n_simul,1+s))
     #Initialize dataframe to store interaction matrix before and after assembly
     names_strains = ['s' + str(i) for i in range(s)]
-    columns = ['n_simulation', 'extant'] + names_strains
-    interactions_df = pd.DataFrame(zero_data, columns=columns)
-    interactions_df.n_simulation = np.repeat(np.arange(n_simul), 2*s)
-    interactions_df.random_assembled = np.tile(np.repeat(np.array([1,0]), s), 
-                                               n_simul)
+    columns = ['n_simulation'] + names_strains
+    interactions_random_df = pd.DataFrame(zero_data, columns=columns)
+    interactions_assembled_df = pd.DataFrame(zero_data, columns=columns)
+    interactions_random_df.n_simulation = np.repeat(np.arange(n_simul), s)
+    interactions_assembled_df.n_simulation = np.repeat(np.arange(n_simul), s)
 
     pbar = ProgressBar()
     for  n in pbar(range(n_simul)):
@@ -209,9 +209,20 @@ def main(argv):
         #Calculate level of cohesion of each species
         #Calculate level of cohesion of each species
         #Calculate net level of interactions species
-        interactions = cohesion_matrix - comp_mat
+        interactions = 0.5*(1 + cohesion_matrix - comp_mat)
+        #Get names of surviving strains
+        #Convert matrix to dataframe
+        #Add lower elements to upper elements
+        triu = np.triu(interactions)
+        tril = np.tril(interactions)
+        total_interactions = 0.5*(triu + tril.transpose())
+        np.fill_diagonal(total_interactions, 0)
+        interaction_random = pd.DataFrame(total_interactions, 
+                                          columns = names_strains)
+        interactions_random_df.iloc[s*n:s*(n+1), 1:1+s] = total_interactions
+        #interaction_random.to_csv("../data/interaction_random.csv",
+        #                          index = False)
         #Save the matrix of interactions before assembly
-        interactions_df.iloc[s*n:s*(n+1), 2:2+s] = interactions
         #Add lower elements to upper elements
         triu = np.triu(interactions)
         tril = np.tril(interactions)
@@ -272,9 +283,33 @@ def main(argv):
         zn = np.concatenate([zn, z], axis = 1)
         zn_stable[n,:] = zn[:,-1]
         #Get a binary vector of 1 for surviving species and 0 for extinct ones
-        survivors = [int(i) for i in zn_stable[n,0:s]>1]
-        #Add this vector to interactions_df
-        interactions_df.iloc[s*(n+1):s*(n+2), 1] = survivors
+        bool_surv = zn_stable[n,0:s]>1
+        #Get rid of networks from extinct species
+        network_stable = [network_n[i] for i in range(len(network_n))
+                                     if bool_surv[i]]
+        #Calculate level of interaction in this case
+        comp_mat = competition_matrix(network_stable, m)
+        fac_mat = facilitation_matrix(network_stable, m)
+        interaction_assembled = 0.5*(1+fac_mat - comp_mat)
+        #Add lower diagonal elements to upper diagonal elements
+        triu = np.triu(interaction_assembled)
+        tril = np.tril(interaction_assembled)
+        total_interactions = 0.5*(triu + tril.transpose())
+        np.fill_diagonal(total_interactions, 0)
+        #Get names of surviving strains
+        surv_names = [names_strains[i] for i in range(s) if bool_surv[i]]
+        #Convert matrix to dataframe
+        interaction_assembled = pd.DataFrame(total_interactions, 
+                                             columns = surv_names)
+        #Create a sxs matrix of zeros
+        A = np.zeros(shape=(s,s))
+        #Embed matrix of assembled interactions in A
+        A[0:total_interactions.shape[0], 0:total_interactions.shape[1]] += total_interactions
+        #Add A to the dataframe
+        interactions_assembled_df.iloc[s*n:s*(n+1), 1:1+s] = A
+        #interaction_assembled.to_csv("../data/interaction_assembled.csv",
+        #                             index = False)
+        survivors = [int(i) for i in bool_surv]
         F_n = np.concatenate([F_n, F])
         Fn_stable[n] = F_n[-1]
         degree_n = np.concatenate([degree_n, degree_time], axis = 1)
@@ -285,6 +320,11 @@ def main(argv):
         
 
     #Create dataframe of networks
+    import ipdb; ipdb.set_trace(context = 20)
+    interactions_random_df.to_csv('../data/interaction_random.csv', 
+                                  index = False)
+    interactions_assembled_df.to_csv('../data/interaction_assembled.csv',
+                                     index = False)
     df_network = pd.DataFrame(tot_reac_network, 
                               columns = ['substrate', 'product'])
     

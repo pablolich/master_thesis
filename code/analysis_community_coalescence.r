@@ -137,8 +137,8 @@ cohesion_similarity = ggplot(data = plot_data, aes(x = P_av, y = sim_av))+
                      limits = c(-0.15, 1.11),
                      breaks = c(0, 0.5, 1),
                      labels = c('0','0.5', '1'))+
-  labs(x = expression(paste('Fitness difference', Delta~Theta)), 
-       y = expression(paste('Similarity', italic(S),
+  labs(x = expression(paste('Fitness difference ', Delta~Theta)), 
+       y = expression(paste('Similarity ', italic(S),
                             '(',italic(C[P]),','
                             ,italic(C[R]),')')))+
   ggsave(filename = '../results/cohesiondiff_similarity.pdf', width = 4.3, height = 4)
@@ -178,7 +178,7 @@ tot_coalescence = ggdraw(ylim = c(0,0.87), xlim = c(0,1)) +
     draw_plot(cohesion_similarity, x = .5, y = .31, width = .5, height = .5) +
     draw_plot(similarity_hist, x = 0.81, y = 0.358, width = 0.17, height = 0.2)+
     draw_plot(extinction_provenance, x = 0.02, y = 0, width = 0.97, height = 0.3) +
-    draw_plot_label(label = c("A", "C", "B"), size = 25,
+    draw_plot_label(label = c("A", "B", "C"), size = 25,
                     x = c(0.05, 0.5, 0.05), y = c(0.87, .87, 0.35)) + 
     ggsave(filename = '../results/community_coalescence_plots.pdf', height = 8, width = 10 )
 
