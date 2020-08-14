@@ -232,7 +232,7 @@ for (i in seq(ncols)){
 
 #Get vector of counts in number of reactions before community assembly
 h = hist(network$n_reac, breaks = seq(16)-0.5)$counts
-#Get proportion of survivors after community coalescence.
+#Get proportion of survivors after community assembly
 alpha = reactions_community/h
 ###Plot mean abundance and alpha as a function of reaction number###
 ##########################################################################################
@@ -251,10 +251,12 @@ num_reac_fitness['err'] = std_$stable.state/(sqrt(len)*max(num_reac_fitness$stab
 #Normalize to 1 in order to plot in the same place
 num_reac_fitness$stable.state = num_reac_fitness$stable.state/max(num_reac_fitness$stable.state)
 #################################################
+#Calculate standard error of binomial distribution for survival probabilities
+se_binom = sqrt(alpha*(1-alpha)/len)
 #This is hovigs section
 num_reac_fitness[16:30,] =  c(seq(max(num_reac_fitness$n_reac)), 
                              alpha, 
-                             rep(0, max(num_reac_fitness$n_reac)))
+                             se_binom)
 #Add vector specifying group of points that we are in
 num_reac_fitness['carrcap_survprop'] = c(rep(0, max(num_reac_fitness$n_reac)),
                                          rep(1, max(num_reac_fitness$n_reac)))
@@ -273,14 +275,29 @@ n_reac_stablestate = ggplot(num_reac_fitness, aes(x = n_reac,
         panel.border = element_rect(colour = "black", fill=NA, size = 1),
         axis.text = element_text(size = 15), 
         axis.title.x = element_text(size = 17),
-        axis.title.y = element_text(size = 19),
+        axis.title.y.left = element_text(size = 15, color = "#3B9AB2"),
+        axis.title.y.right = element_text(size = 17, color = "#F21A00"),
         legend.position = 'none',
-        aspect.ratio = 1)+
+        aspect.ratio = 1,
+        axis.text.y.right = element_text(colour = "#F21A00"),
+        axis.line.y.right = element_line(colour = "#F21A00"),
+        axis.text.y.left = element_text(colour = "#3B9AB2"),
+        axis.line.y.left = element_line(colour = "#3B9AB2"),
+        axis.ticks.y.left = element_line(colour = "#3B9AB2", size = 1.25),
+        axis.ticks.y.right = element_line(colour = "#F21A00", size = 1.25))+
   scale_x_continuous(breaks = c(1, 5, 10, 15), 
                      labels = c('1', '5', '10', '15'))+
+  scale_y_continuous(breaks = c(0.3, 0.65, 1),
+                     labels = c('0.3', '0.65', '1'),
+                     sec.axis = sec_axis(trans = ~ . ,
+                                         breaks = c(0.3, 0.65, 1),
+                                         labels = c(),
+                                         name = expression(paste("Survival probability ", 
+                                         italic(p)))))+
   scale_color_manual(values = c("#3B9AB2", "#F21A00"))+
   labs(x = expression(paste('Number reactions ',italic(n[r]))), 
-       y = expression(italic(symbol("\341")*N[infinity]*symbol("\361"))))+
+       y = expression(paste('Rescaled mean abundance ',
+                            italic(symbol("\341")*n[infinity]*symbol("\361")))))+
   ggsave(filename = '../results/n_reac_stablestate.pdf', width = 4.3, height = 4)
 
 ########################################################################################
@@ -321,13 +338,12 @@ n_reac_stablestate = ggplot(num_reac_fitness, aes(x = n_reac,
 ##########################################################################################
 #Put all plots together
   tot_assembly = ggdraw() +
-    draw_plot(histogram_richness, x = 0, y = 0, width = 0.3, height = 0.5) +
-    draw_plot(n_reac_stablestate, x = 0.3, y = 0, width = 0.3, height = 0.5) +
-    draw_plot(bar_plot, x = 0.6, y = 0, width = 0.36, height = 0.5)+
+    draw_plot(histogram_richness, x = 0, y = 0, width = 0.5, height = 0.5) +
+    draw_plot(n_reac_stablestate, x = 0.5, y = 0, width = 0.5, height = 0.5) +
     draw_plot(model_example, x = 0, y = 0.5, width = 0.5, height = 0.5)+
     draw_plot(community_reaction_network, x = 0.5, y = 0.5, width = 0.5, height = 0.5) +
-    draw_plot_label(label = c("A", "B", "C", "D", "E"), size = 25,
-                    x = c(0,0.5,0,0.3,0.6), y = c(1,1,0.5,0.5,0.5))+
+    draw_plot_label(label = c("A", "B", "C", "D"), size = 25,
+                    x = c(0,0.49,0,0.49), y = c(1,1,0.5,0.5))+
     ggsave(filename = '../results/community_assembly_plots.pdf', width = 10, height = 8)
 
 
@@ -545,7 +561,6 @@ for (i in unique(inter_random_df$n_simulation)){
   surv_score_fitness[rank_fitness] = surv_score_fitness[rank_fitness] + 1 
   #Get rank in assembled community
   rank_assembled = order(order(degree_assembled))
-  
   #Add to vector of weighted survival population
   cohesion_rank_assembled = data.frame('label' = surv_labels, 
                                        'cohesion_rank' = rank_assembled)
@@ -579,20 +594,31 @@ surv_score_weighted_unit = surv_score_weighted/length(unique(inter_random_df$n_s
 surv_score_fitness_unit = surv_score_fitness/length(unique(inter_random_df$n_simulation))
 #Prealocate vector of reaction number median
 number_reac_median_ranked = rep(0, 10)
+n_samples = rep(0,10)
+std_samples = rep(0,10)
 #Get median number of reactions at each rank
 for (i in seq(nrow(reac_number_ranked))){
   #Get vector of reaction number at rank position i
   reac_number_i = reac_number_ranked[i,]
   #Eliminate all 0
   reac_number_i = reac_number_i[reac_number_i != 0]
+  #Get number of samples
+  n_samples[i] = length(reac_number_i)
+  #Get standar deviations of each rank
+  std_samples[i] = sd(reac_number_i)
   #Calculate median
-  number_reac_median_ranked[i] = median(reac_number_i)
+  number_reac_median_ranked[i] = mean(reac_number_i)
 }
+#Calculate vector of errors
+k = length(unique(inter_random_df$n_simulation))
+err_cohesion = sqrt((surv_score/k*(1 - surv_score/k))/k)
+err_fitness = sqrt((surv_score_fitness/k*(1 - surv_score_fitness/k))/k)
 #Create data for plot
 presence_proportion = data.frame('x' = rep(seq(10), 2),
                                  'y' = c(surv_score_fitness_unit, surv_score_weighted_unit),
                                  'group' = c(rep(0, 10), rep(1, 10)),
-                                 'number_reac' = rep(number_reac_median_ranked,2))
+                                 'number_reac' = rep(number_reac_median_ranked,2),
+                                 'err' = c(err_cohesion, err_fitness))
 #Get number of different reaction numbers
 levels_reac = length(unique(presence_proportion$number_reac))
 #Get colors pallette
@@ -602,6 +628,8 @@ survival_proportion = ggplot(data = presence_proportion,
   geom_hline(yintercept=median(number_extinctions)/s, linetype="dashed", size=1)+
   geom_point(aes(shape = as.factor(group),
                  fill = number_reac), size = 4)+
+  geom_errorbar(aes(ymin = y-err, ymax= y + err), 
+                width=.2)+
   annotate(geom="text", x=8, y=0.56, label=expression(paste(symbol("\341"),
                                                           italic(p),
                                                           symbol("\361"))),
@@ -611,29 +639,34 @@ survival_proportion = ggplot(data = presence_proportion,
         axis.text = element_text(size = 20), 
         axis.title = element_text(size = 20),
         aspect.ratio = 1,
-        legend.position = c(0.25, 0.25),
+        legend.position = c(0.27, 0.25),
         legend.background = element_blank(),
-        legend.margin = margin(t = -15, r = 0, b = -20, l = 0, unit = "pt"),
+        legend.margin = margin(t = -15, r = 0, b = -15, l = 0, unit = "pt"),
         legend.key = element_blank(),
         legend.text = element_text(size = 15),
         legend.title = element_text(size = 17))+
-  scale_shape_manual(values = c(24,21),
-                     labels = c('fitness', 'cohesion'),
-                     guide = guide_legend())+
   scale_fill_gradientn(colors = paleta_reac,
-                       breaks = c(5,8,11),
+                       breaks = c(6,7,8,9),
                        guide = guide_colourbar(direction = "horizontal", 
                                                 title.position = "top"))+
+  scale_shape_manual(values = c(24,21),
+                     labels = c('performance', expression(paste('cohesion ',
+                                                                italic(s[alpha])))),
+                     guide = guide_legend())+
   # scale_colour_manual(values = c("#F21A00", "#3B9AB2"),
   #                     labels = c('weighted', 'unweighted'))+
   scale_x_continuous(breaks = c(1, 10))+
   scale_y_continuous(limits = c(0,0.7),
                      breaks = c(0,0.35,0.7),
                      labels = c('0', '0.35', '0.7'))+
+  guides(fill = guide_colourbar(order = 1, 
+                                direction = 'horizontal',
+                                title.position = "top"), 
+         shape = guide_legend(order = 2))+
   labs(fill = expression(paste(symbol("\341"),italic(n[r]),symbol("\361"))), 
        shape = '',
        x = 'Rank',
-       y = expression(paste('Survival rate ', italic(p))))+
+       y = expression(paste('Survival probability ', italic(p))))+
   ggsave('../results/survival_proportion.pdf')
 
 
