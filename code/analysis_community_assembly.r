@@ -1,10 +1,16 @@
-require(ggplot2)
-library(reshape2)
-library(wesanderson)
-require(cowplot)
-source('coal_analysis_functions.R')
 rm(list=ls())
 dev.off()
+require(ggplot2)
+library(reshape2)
+library(stringr)
+library(wesanderson)
+require(cowplot)
+library(ggpubr)
+library(grid)
+library(gridExtra)
+library(igraph)
+source('coal_analysis_functions.R')
+
 #Compile all useful community data into one object
 ##############################################################################
 #Load time series data and stable state community composition
@@ -45,6 +51,30 @@ network = read.table('../data/coal_network.csv', sep = ',', header = T,
                                     'autocohesion'='numeric'), row.names = 1)
 #Change format of one column quickly
 network$strain = paste('s', network$strain, sep = '')
+
+#Get proxy of individual fitness for all species in network
+it = length(network$substrate)
+#Prealocate
+substrate_vectors = matrix(0, nrow = it, ncol = m)
+fitness_proxy = rep(0, it)
+for (i in seq(it)){
+  #Get string of substrates
+  substrates_i = network$substrate[i]
+  #Extract numbers into a list
+  matches <- regmatches(substrates_i, gregexpr("[[:digit:]]+", substrates_i))
+  #Unlist to a vector
+  vec_subs_i = as.numeric(unlist(matches))
+  #Add vector to matrix
+  substrate_vectors[i,1:length(vec_subs_i)] = vec_subs_i
+  #Calculate fitness proxy
+  fitness_proxy[i] = network$surplus[i] + 
+    2*length(unique(vec_subs_i)) - length(vec_subs_i)
+}
+#Add fitness_proxy to the network dataframe
+network['fitness'] = fitness_proxy
+
+#############################################################################
+
 #Merge with surv_comp_long
 all_data = merge(surv_comp_long, network, by = c('n_simulation', 'strain'))
 #Get facilitation and competition indices each community
@@ -63,41 +93,6 @@ all_data['team'] = compete_vector
 #Save data
 write.csv(all_data, '../data/community_data.csv', row.names = F)
 ##########################################################################################
-
-###Plot mean abundance as a function of reaction number###
-##########################################################################################
-#Get number of different reaction numbers
-levels_reac = length(unique(all_data$n_reac))
-#Get colors pallette
-paleta_reac = wes_palette("Zissou1", levels_reac, type = 'continuous')
-#Plot median stable state for each reaction number
-num_reac_fitness = aggregate(stable.state~n_reac, all_data, mean)
-std_ =  aggregate(stable.state~n_reac, all_data, sd)
-num_reac_fitness['err'] = std_$stable.state
-n_reac_stablestate = ggplot(num_reac_fitness, aes(x = n_reac, y = stable.state,
-                                                  colour = n_reac))+
-  geom_point(size = 5)+
-  geom_errorbar(aes(ymin=stable.state-err, ymax=stable.state + err,
-                    colour = n_reac), 
-                width=.2,
-                position=position_dodge(.9))+
-  theme(panel.background = element_blank(), 
-        panel.border = element_rect(colour = "black", fill=NA, size = 1),
-        axis.text = element_text(size = 15), 
-        axis.title = element_text(size = 20),
-        legend.position = c(0.85, 0.7),
-        legend.text = element_text(size = 15),
-        legend.title = element_text(size = 20),
-        legend.background = element_blank(),
-        legend.key.size = unit(10, 'mm'),
-        aspect.ratio = 1)+
-  scale_x_continuous(breaks = c(1, 5, 10, 15), 
-                     labels = c('1', '5', '10', '15'))+
-  labs(colour = expression('n'[r]), x = expression('n'[r]), 
-       y = expression(symbol("\341")*N[infinity]*symbol("\361")))+
-  scale_color_gradientn(colors = paleta_reac,
-                        breaks = c(1,5,10,15))+
-  ggsave(filename = '../results/n_reac_stablestate.pdf', width = 4.3, height = 4)
 
 ###Plot histogram of richnesses###
 ##########################################################################################
@@ -118,7 +113,7 @@ histogram_richness = ggplot(data.frame(v), aes(x=v)) +
                      breaks = c(1,3, 5, 7, 9), 
                      labels = c('1','3', '5', '7', '9'))+
   scale_y_continuous(expand = c(0,0))+
-  labs(x = 'Richness', y = 'Frequency')+
+  labs(x = 'Richness', y = 'Counts')+
   ggsave(filename = '../results/histogram_richness.pdf', width = 4.3, height = 4)
 
 ################################################################################
@@ -157,20 +152,21 @@ model_example = ggplot(data_nice, aes(x = t, y = population,
   theme(
     legend.title = element_text(size = 20),
     legend.text = element_text(size = 15, color = 'black'),
-    legend.position = c(0.1, 0.75),
+    legend.position = c(0.1, 0.7),
     legend.background = element_blank(),
     panel.background = element_blank(),
     panel.border = element_rect(colour = "black", fill=NA, size = 1),
     axis.title = element_text(size = 20), 
     legend.key = element_blank(), 
     axis.text = element_text(size = 15),
+    aspect.ratio = 1
     #plot.margin=unit(c(2,0,-2,0),"cm")
   )+
   scale_x_continuous(limits = c(1, 5e4), trans = 'log10', expand = c(0, 0), 
                      labels = c('1', '1e2', '1e3')) + 
   scale_y_continuous(limits = c(-1, 35), expand = c(0, 0))+
   labs(x = 't [a.u.]',
-       y = expression(paste('N'[alpha],' [a.u.]')))+
+       y = expression(paste('Abundance ',italic(N[alpha]),' [a.u.]')))+
   guides(color=guide_legend(expression('n'[r]), 
                             title.hjust = 0.5))+
   scale_color_manual('', values=paleta)+
@@ -198,10 +194,10 @@ community_reaction_network = ggplot(paint, aes(Var2, rev(Var1))) +
         axis.text = element_text(size = 15),
         axis.title = element_text(size = 20),
         axis.ticks = element_line(),
-        legend.position = c(0.2, 0.4),
+        legend.position = c(0.2, 0.43),
         legend.background = element_blank(),
         legend.text = element_text(size = 15),
-        legend.title = element_text(size = 25),
+        legend.title = element_text(size = 23),
         legend.key.size = unit(10, 'mm'))+
   scale_x_continuous(expand = c(0, 0), 
                      breaks = c(1, 5, 10, 15), 
@@ -210,21 +206,130 @@ community_reaction_network = ggplot(paint, aes(Var2, rev(Var1))) +
                      breaks = rev(c(1, 5, 10, 15)), 
                      labels = c('1', '5', '10', '15'))+
   scale_fill_gradientn(colours = paleta,
-                       breaks = c(0, 40, 80))+
-  labs(fill = expression(Omega[xy]), x = 'y (product)', y = 'x (substrate)')+
+                       breaks = c(0, 35, 70))+
+  labs(fill = expression(Omega[xy]), 
+       x = expression(paste(italic(y), ' (product)')), 
+       y = expression(paste(italic(x), ' (substrate)')))+
   coord_fixed(ratio = 1)+
   ggsave(filename = '../results/community_reaction_network.pdf', width = 4.3, height = 4)
 ##########################################################################################
 
-#Put all plots together
-#Arange all plots in a mega plot
-tot = ggarrange(model_example, community_reaction_network,
-                histogram_richness, n_reac_stablestate,
-                labels = c("A", "B", "C", "D"),
-                ncol =2, nrow = 2, 
-                font.label = list(size = 25))
+#Plot scatter plot of mean abundance at equilibrium and proportion of survivors
+#as a function of the number of reactions.
+#Prealocate matrix of results
+nrows = max(all_data$n_reac)
+ncols = length(unique(all_data$n_simulation))
+reactions_community = rep(0, nrows)
+for (i in seq(ncols)){
+  #Get a vector of number of reactions of each surviving strain
+  n_reactions_i = all_data$n_reac[all_data$n_simulation == i]
+  #Get frequencies of each reaction number
+  n_reac_freq = table(n_reactions_i)
+  #Add the number of strains with n_reac reactions to each corresponding bin
+  ind = as.numeric(names(n_reac_freq))
+  reactions_community[ind] = reactions_community[ind] + as.numeric(n_reac_freq)
+}
 
-ggsave('../results/community_assembly_plots.pdf', plot = tot, height = 10, width = 10)
+#Get vector of counts in number of reactions before community assembly
+h = hist(network$n_reac, breaks = seq(16)-0.5)$counts
+#Get proportion of survivors after community coalescence.
+alpha = reactions_community/h
+###Plot mean abundance and alpha as a function of reaction number###
+##########################################################################################
+#Get number of different reaction numbers
+levels_reac = length(unique(all_data$n_reac))
+#Get colors pallette
+paleta_reac = wes_palette("Zissou1", levels_reac, type = 'continuous')
+#Create dataframe for plotting
+#Dealing with mean abundance
+num_reac_fitness = aggregate(stable.state~n_reac, all_data, mean)
+#Need to divide by square root of samples
+#Get number of elements in each reaction number
+len = aggregate(stable.state~n_reac, all_data, length)$stable.state
+std_ =  aggregate(stable.state~n_reac, all_data, sd)
+num_reac_fitness['err'] = std_$stable.state/(sqrt(len)*max(num_reac_fitness$stable.state))
+#Normalize to 1 in order to plot in the same place
+num_reac_fitness$stable.state = num_reac_fitness$stable.state/max(num_reac_fitness$stable.state)
+#################################################
+#This is hovigs section
+num_reac_fitness[16:30,] =  c(seq(max(num_reac_fitness$n_reac)), 
+                             alpha, 
+                             rep(0, max(num_reac_fitness$n_reac)))
+#Add vector specifying group of points that we are in
+num_reac_fitness['carrcap_survprop'] = c(rep(0, max(num_reac_fitness$n_reac)),
+                                         rep(1, max(num_reac_fitness$n_reac)))
+#################################################
+#Add errorbars to red points by calculating the standard error of survival proportion 
+#across simulations. I think this can be done using a binomial distribution.
+#Add second axis to put the name of the red points as a variable
+#Plot median stable state for each reaction number
+n_reac_stablestate = ggplot(num_reac_fitness, aes(x = n_reac, 
+                                                  y = stable.state,
+                                                  colour = as.factor(carrcap_survprop)))+
+  geom_errorbar(aes(ymin=stable.state-err, ymax=stable.state + err), 
+                width=.2)+
+  geom_point(size = 3)+
+  theme(panel.background = element_blank(), 
+        panel.border = element_rect(colour = "black", fill=NA, size = 1),
+        axis.text = element_text(size = 15), 
+        axis.title.x = element_text(size = 17),
+        axis.title.y = element_text(size = 19),
+        legend.position = 'none',
+        aspect.ratio = 1)+
+  scale_x_continuous(breaks = c(1, 5, 10, 15), 
+                     labels = c('1', '5', '10', '15'))+
+  scale_color_manual(values = c("#3B9AB2", "#F21A00"))+
+  labs(x = expression(paste('Number reactions ',italic(n[r]))), 
+       y = expression(italic(symbol("\341")*N[infinity]*symbol("\361"))))+
+  ggsave(filename = '../results/n_reac_stablestate.pdf', width = 4.3, height = 4)
+
+########################################################################################
+  bar_plot = ggplot(data=data_barplot, aes(x=n_reac, 
+                                y=n_strains, 
+                                fill=as.factor(random_assembled))) +
+    geom_bar(stat="identity", color="black", position=position_dodge(),
+             width = 0.7)+
+    theme(panel.background = element_blank(),
+          panel.grid = element_blank(),
+          panel.border = element_rect(colour = "black", fill=NA, size = 1),
+          axis.text = element_text(size = 15), 
+          axis.title.x = element_text(size = 20),
+          axis.title.y = element_text(size = 19),
+          legend.position = c(0.35, 0.15),
+          legend.text = element_text(size = 15),
+          legend.title = element_blank(),
+          legend.key.size = unit(5, 'mm'),
+          aspect.ratio = 1,
+          axis.text.y.right = element_text(colour = "#F21A00"),
+          axis.line.y.right = element_line(colour = "#F21A00"),
+          axis.text.y.left = element_text(colour = "#3B9AB2"),
+          axis.line.y.left = element_line(colour = "#3B9AB2"))+
+    scale_fill_manual(values = c("#3B9AB2", "#F21A00"),
+                      labels = c('Random', 'Assembled'))+
+    scale_x_continuous(limits = c(0.5, 15.5),
+                       breaks = c(1,5,10,15))+
+    scale_y_continuous(breaks = c(0, 0.5, 1),
+                       labels = c('0', '750', '1500'),
+                       expand = c(0,0),
+                       sec.axis = sec_axis(trans = ~ . /2,
+                                           breaks = c(0, 0.25, 0.5),
+                                           labels = c('0','375', '750')))+
+    labs(x = expression(italic(n[r])),
+         y = 'Frequency')
+    
+    
+##########################################################################################
+#Put all plots together
+  tot_assembly = ggdraw() +
+    draw_plot(histogram_richness, x = 0, y = 0, width = 0.3, height = 0.5) +
+    draw_plot(n_reac_stablestate, x = 0.3, y = 0, width = 0.3, height = 0.5) +
+    draw_plot(bar_plot, x = 0.6, y = 0, width = 0.36, height = 0.5)+
+    draw_plot(model_example, x = 0, y = 0.5, width = 0.5, height = 0.5)+
+    draw_plot(community_reaction_network, x = 0.5, y = 0.5, width = 0.5, height = 0.5) +
+    draw_plot_label(label = c("A", "B", "C", "D", "E"), size = 25,
+                    x = c(0,0.5,0,0.3,0.6), y = c(1,1,0.5,0.5,0.5))+
+    ggsave(filename = '../results/community_assembly_plots.pdf', width = 10, height = 8)
+
 
 ##########################################################################################
 
@@ -279,12 +384,12 @@ plot(time, competition, col = 'red')
 points(time, facilitation, col = 'green')
 
 interaction_plot = ggplot(data = averaged_data, aes(x = time, y = interaction))+
-  geom_point(colour = "#F21A00", size = 6)+
+  geom_point(colour = "#F21A00", size = 4)+
   theme(panel.background = element_blank(), 
         panel.border = element_rect(colour = "black", fill=NA, size = 2),
-        axis.text = element_text(size = 25), 
-        axis.title = element_text(size = 30),
-        aspect.ratio = 0.7)+
+        axis.text = element_text(size = 20), 
+        axis.title = element_text(size = 25),
+        aspect.ratio = 1)+
   scale_x_continuous(breaks = c(0, 250, 500))+
   scale_y_continuous(breaks = c(-1,-0.55,-0.1),
                      labels = c('-1','-0.5', '0'))+
@@ -296,56 +401,54 @@ subplot_data = melt(averaged_data, id.vars = c('time'))
 subplot_data = subplot_data[subplot_data$variable != 'interaction',]
 inset_plot = ggplot(data = subplot_data, aes(x = time, y = value,
                                 colour = as.factor(variable)))+
-  geom_point(size = 3)+
+  geom_point(size = 2)+
   theme_minimal()+
   theme(panel.background = element_blank(), 
         panel.grid = element_blank(),
         panel.border = element_rect(colour = "black", fill=NA, size = 1),
         axis.title = element_blank(),
-        axis.text = element_text(size = 20), 
+        axis.text = element_text(size = 15), 
         axis.ticks = element_line(),
-        legend.position = c(0.8, 0.7),
+        legend.position = c(0.75, 0.7),
         legend.text = element_text(size = 20),
         legend.title = element_blank(),
         legend.background = element_blank(),
         legend.key = element_blank(),
         legend.spacing.x = unit(0, 'mm'),
-        aspect.ratio = 0.7)+
-   guides(color = guide_legend(override.aes = list(size=6)))+
+        aspect.ratio = 1)+
+   guides(color = guide_legend(override.aes = list(size=5)))+
    scale_x_continuous(breaks = c(0, 250, 500),
                       limits = c(0,500),
                       expand = c(0.02,0.02))+
    scale_y_continuous(breaks = c(1.5,2.5,3.5))+
   scale_colour_manual(values = c("#EBCC2A", "#3B9AB2"),
                       name = "", labels = c(expression(paste(symbol("\341"),
-                                                             italic(C),
+                                                             italic(bar(C)),
                                                              symbol("\361"))), 
                                              expression(paste(symbol("\341"),
-                                                              italic(F),
+                                                              italic(bar(F)),
                                                               symbol("\361")))))+
   labs(fill = '')
-
-ggdraw() +
-  draw_plot(interaction_plot) +
-  draw_plot(inset_plot, x = .34, y = .22, width = .75, height = .31) +
-  ggsave(filename = '../results/interaction_evolution_plots.pdf', height = 8, width = 10 )
   
 
 ###############################################################################################
 
 #Plot network of bacteria before and after the assembly
 
-
-#Things I want to do:
-#1.   Order vertices as a function of their strength
-#2.   Size of the circle represents the number of reactions that it has.
-
-
 #Load data
 inter_random_df = read.table('../data/interaction_random.csv', sep = ',',
                           header = T)
 inter_assembled_df = read.table('../data/interaction_assembled.csv', sep = ',',
                              header = T)
+#Initialize vector of survival score
+surv_score = rep(0, ncol(inter_random_df)-1)
+surv_score_weighted = rep(0, ncol(inter_random_df)-1)
+surv_score_fitness = rep(0, ncol(inter_random_df)-1)
+#Initialize matrix of number of reactions
+reac_number_ranked = matrix(0, ncol(inter_random_df)-1, 
+                            length(unique(inter_random_df$n_simulation)))
+#Initialize vector of extinctions
+number_extinctions = rep(0,  length(unique(inter_random_df$n_simulation)))
 
 #Plot random and assembled networks for all simulations
 pb = txtProgressBar(1, length(unique(inter_random_df$n_simulation)), style=3)
@@ -357,7 +460,7 @@ for (i in unique(inter_random_df$n_simulation)){
   n_surv = length(all_data$strain[all_data$n_simulation == i])
   #Get rid of 0 in the assembled matrix
   inter_assembled_i = data.matrix(inter_assembled_df[inter_assembled_df$n_simulation == i, 2:ncol(inter_assembled_df)])[0:n_surv,0:n_surv]
-  if (length(inter_assembled_i) == 0){
+  if (length(inter_assembled_i) == 0 | length(inter_assembled_i) == 1){
     next
   }
   #Get rid of column names
@@ -380,23 +483,32 @@ for (i in unique(inter_random_df$n_simulation)){
   E(g_random)$width = 5*range01(E(g_random)$weight)
   #Color for nodes
   #Get a pallette with as many colours as different node_strengths
-  degree_ = strength(g_random)
-  n_nodes = length(degree_)
+  degree_random = strength(g_random)
+  n_nodes = length(degree_random)
   colours_nodes = wes_palette('Zissou1', type = 'continuous', n = n_nodes)
   #Get indices that would order the array of node strengths
   #Get size of nodes.
   reac_number = network$n_reac[network$n_simulation == i]
   V(g_random)$size = 3*(5+reac_number)
-  ordered_index = order(order(degree_, decreasing = F))
+  ordered_index = order(order(degree_random, decreasing = F))
   V(g_random)$color = colours_nodes[ordered_index]
   #Add labels to nodes
-  V(g_random)$label = colnames(inter_random_df)[2:ncol(inter_random_df)]
+  label_random = colnames(inter_random_df)[2:ncol(inter_random_df)]
+  #Get individual fitness of species in the community
+  fitness = network$fitness[network$n_simulation == i]
+  cohesion_rank = data.frame('label' = label_random, 
+                             'cohesion_rank' = order(order(degree_random, 
+                                                           decreasing = T)),
+                             'fitness_rank' = order(order(fitness,
+                                                          decreasing = T)),
+                             'reac_number' = reac_number)
+  V(g_random)$label = label_random
   #Plot
   par(mfrow=c(2,1),
       mar = c(2, 0, 0, 0),
       oma = c(0,0,0,0),
       xpd = NA)
-  plot(g_random, layout = layout_in_circle(g_random, order = order(degree_,
+  plot(g_random, layout = layout_in_circle(g_random, order = order(degree_random,
                                                                    decreasing = T)),
        vertex.label.cex = 1.8)
   
@@ -410,25 +522,198 @@ for (i in unique(inter_random_df$n_simulation)){
   E(g_assembled)$color = as.character(color_df$color[indices])
   #Color for nodes
   #Get a pallette with as many colours as different node_strengths
-  degree_ = strength(g_assembled)
-  n_nodes = length(degree_)
+  degree_assembled = strength(g_assembled)
+  n_nodes = length(degree_assembled)
   colours_nodes = wes_palette('Zissou1', type = 'continuous', n = n_nodes)
   #Get indices that would order the array of node strengths
-  ordered_index = order(order(degree_, decreasing = F))
+  ordered_index = order(order(degree_assembled, decreasing = F))
   #Assign colours
   V(g_assembled)$color = colours_nodes[ordered_index]
   #Get size of nodes.
   reac_number = all_data$n_reac[all_data$n_simulation == i]
-  V(g_assembled)$size = 3*(5+reac_number)
+  V(g_assembled)$size = 3*(6+reac_number)
   #Get labels of surviving sepecies
   surv_labels = as.character(all_data$strain[all_data$n_simulation == i])
+  number_extinctions[i] = length(label_random) - length(surv_labels)
   #Add labels to nodes
   V(g_assembled)$label = surv_labels
+  #Get original cohesion rank from surviving species
+  rank_surv = cohesion_rank$cohesion_rank[cohesion_rank$label %in% surv_labels]
+  rank_fitness = cohesion_rank$fitness_rank[cohesion_rank$label %in% surv_labels]
+  #Add to vector of survival proportion
+  surv_score[rank_surv] = surv_score[rank_surv] + 1
+  surv_score_fitness[rank_fitness] = surv_score_fitness[rank_fitness] + 1 
+  #Get rank in assembled community
+  rank_assembled = order(order(degree_assembled))
+  
+  #Add to vector of weighted survival population
+  cohesion_rank_assembled = data.frame('label' = surv_labels, 
+                                       'cohesion_rank' = rank_assembled)
+  #Get weights
+  weights = cohesion_rank_assembled$cohesion_rank/max(cohesion_rank_assembled$cohesion_rank)
+  surv_score_weighted[rank_surv] = surv_score_weighted[rank_surv] + weights
+  
+  #Get number of reactions of surviving species
+  reac_number_surv = cohesion_rank$reac_number[cohesion_rank$label %in%
+                                                 surv_labels]
+  #Add to the matrix of ranked number of reactions
+  reac_number_ranked[rank_surv, i] = reac_number_surv  
   #Plot
   plot(g_assembled, 
        layout = layout_in_circle(g_assembled, 
-                                 order = order(degree_, decreasing = T)),
+                                 order = order(degree_assembled, decreasing = T)),
        vertex.label.cex = 1.8)
   setTxtProgressBar(pb, i)
 }
 dev.off()
+
+###############################################################################
+
+#Plot presence proportion in the assembled community as a function of the cohesion rank 
+#in the random community. Blue curve is the weighted version of the plot by the rank in the
+#assembled community.
+
+#Prepare data
+surv_score_unit = surv_score/length(unique(inter_random_df$n_simulation))
+surv_score_weighted_unit = surv_score_weighted/length(unique(inter_random_df$n_simulation))
+surv_score_fitness_unit = surv_score_fitness/length(unique(inter_random_df$n_simulation))
+#Prealocate vector of reaction number median
+number_reac_median_ranked = rep(0, 10)
+#Get median number of reactions at each rank
+for (i in seq(nrow(reac_number_ranked))){
+  #Get vector of reaction number at rank position i
+  reac_number_i = reac_number_ranked[i,]
+  #Eliminate all 0
+  reac_number_i = reac_number_i[reac_number_i != 0]
+  #Calculate median
+  number_reac_median_ranked[i] = median(reac_number_i)
+}
+#Create data for plot
+presence_proportion = data.frame('x' = rep(seq(10), 2),
+                                 'y' = c(surv_score_fitness_unit, surv_score_weighted_unit),
+                                 'group' = c(rep(0, 10), rep(1, 10)),
+                                 'number_reac' = rep(number_reac_median_ranked,2))
+#Get number of different reaction numbers
+levels_reac = length(unique(presence_proportion$number_reac))
+#Get colors pallette
+paleta_reac = wes_palette("Zissou1", levels_reac, type = 'continuous')
+survival_proportion = ggplot(data = presence_proportion, 
+       aes(x = x, y = y))+
+  geom_hline(yintercept=median(number_extinctions)/s, linetype="dashed", size=1)+
+  geom_point(aes(shape = as.factor(group),
+                 fill = number_reac), size = 4)+
+  annotate(geom="text", x=8, y=0.56, label=expression(paste(symbol("\341"),
+                                                          italic(p),
+                                                          symbol("\361"))),
+            size = 8, parse = TRUE)+
+  theme(panel.background = element_blank(), 
+        panel.border = element_rect(colour = "black", fill=NA, size = 2),
+        axis.text = element_text(size = 20), 
+        axis.title = element_text(size = 20),
+        aspect.ratio = 1,
+        legend.position = c(0.25, 0.25),
+        legend.background = element_blank(),
+        legend.margin = margin(t = -15, r = 0, b = -20, l = 0, unit = "pt"),
+        legend.key = element_blank(),
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 17))+
+  scale_shape_manual(values = c(24,21),
+                     labels = c('fitness', 'cohesion'),
+                     guide = guide_legend())+
+  scale_fill_gradientn(colors = paleta_reac,
+                       breaks = c(5,8,11),
+                       guide = guide_colourbar(direction = "horizontal", 
+                                                title.position = "top"))+
+  # scale_colour_manual(values = c("#F21A00", "#3B9AB2"),
+  #                     labels = c('weighted', 'unweighted'))+
+  scale_x_continuous(breaks = c(1, 10))+
+  scale_y_continuous(limits = c(0,0.7),
+                     breaks = c(0,0.35,0.7),
+                     labels = c('0', '0.35', '0.7'))+
+  labs(fill = expression(paste(symbol("\341"),italic(n[r]),symbol("\361"))), 
+       shape = '',
+       x = 'Rank',
+       y = expression(paste('Survival rate ', italic(p))))+
+  ggsave('../results/survival_proportion.pdf')
+
+
+ggdraw() +
+  draw_plot(interaction_plot, y = 0, height = 0.5) +
+  draw_plot(inset_plot, x = .45, y = .09, width = .4, height = .25) +
+  draw_plot(survival_proportion, y = 0.5, height = 0.5)+
+  draw_plot_label(label = c("C", "D"), size = 25,
+                  x = c(0, 0), y = c(1,0.5))+
+  ggsave(filename = '../results/interaction_evolution_plots.pdf', 
+         height = 8,
+         width = 5)
+
+##############################################################################
+#Draw a plot of correlation between abundance at equilibrium and my proxy for
+
+#Load data
+fitness_abundance = read.table('../data/abundance_fitness.csv', sep = ',', header = T,
+                         row.names = 1)
+#Get rid of outlier
+fitness_abundance = fitness_abundance[fitness_abundance$K < 1000 ,]
+
+#Get table of frequencies of values
+tab_K = table(fitness_abundance$K)
+#Get very repeated indices
+rep_inds = which(as.vector(table(fitness_abundance$K)) >= 6)
+#Find values for those indices
+rep_values = as.numeric(names(tab_K)[rep_inds])
+#Get rid of them
+fitness_abundance_norep = fitness_abundance[!(fitness_abundance$K >= min(rep_values)-0.0001&
+                                          fitness_abundance$K <= max(rep_values)+0.0001),]
+
+fitness_abundance = fitness_abundance_norep
+#Bin and average plot
+#Average plot
+h = hist(fitness_abundance$fitness, 
+         breaks=seq(floor_dec(min(fitness_abundance$fitness, 1)),
+                    ceiling_dec(max(fitness_abundance$fitness), 1), 
+                    length.out = 10))
+#Find the interval containing each element of delP2 in breaks.
+ind_av = findInterval(fitness_abundance$fitness, h$breaks)
+#Bin similar data together
+fit_av = rep(0, length(unique(ind_av)))
+K_av = rep(0, length(unique(ind_av)))
+K_std = rep(0, length(unique(ind_av)))
+j = 1
+for (i in (unique(ind_av))){
+  #Average equivalent measurements by bin
+  av_data = fitness_abundance[which(ind_av == i),]
+  fit_av[j] = median(av_data$fitness)
+  K_av[j] = median(av_data$K)
+  K_std[j] = sd(av_data$K)/sqrt(length(av_data$K))
+  j = j+1
+}
+#Create dataframe with averaged measures
+average_fitness_abundance = data.frame('fitness' = fit_av, 
+                                       'K' = K_av, 
+                                       'K_err' = K_std)
+#Plot correlation
+
+fitness_abundance = ggplot(average_fitness_abundance, aes(x = fitness, y = K_av))+
+  geom_errorbar(aes(ymin=K_av-K_err, ymax=K_av + K_err), 
+                width=.2,
+                position=position_dodge(.9),
+                linetype = 'dashed')+
+  geom_point(size = 3)+
+  theme(panel.background = element_blank(), 
+        panel.border = element_rect(colour = "black", fill=NA, size = 1),
+        axis.text = element_text(size = 15), 
+        axis.title.x = element_text(size = 17),
+        axis.title.y = element_text(size = 19),
+        legend.position = c(0.85, 0.7),
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 20),
+        legend.background = element_blank(),
+        legend.key.size = unit(10, 'mm'),
+        aspect.ratio = 1)+
+  # scale_x_continuous(breaks = c(1, 5, 10, 15), 
+  #                    labels = c('1', '5', '10', '15'))+
+  labs(x = 'Individual Fitness', 
+       y = expression(italic(symbol("\341")*N[infinity]^0*symbol("\361"))))+
+  ggsave(filename = '../results/fitness_abundance.pdf', width = 4.3, height = 4)
+

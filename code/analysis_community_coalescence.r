@@ -77,7 +77,7 @@ extinction_provenance = ggplot(extinct_plot, aes(x+1, y+1)) +
                      labels = c('low','high'))+
   scale_fill_manual(values = c("#F21A00", "#EBCC2A", "#3B9AB2"))+
   labs(x = 'Coalescence instances (ordered by dominant color)',
-       y = expression(Theta))+
+       y = expression(italic(s[alpha])))+
   ggsave(filename = '../results/extinctions_provenance.pdf', width = 8, height = 2)
 
 #####################################################################################
@@ -137,7 +137,7 @@ cohesion_similarity = ggplot(data = plot_data, aes(x = P_av, y = sim_av))+
                      limits = c(-0.15, 1.11),
                      breaks = c(0, 0.5, 1),
                      labels = c('0','0.5', '1'))+
-  labs(x = expression(paste('Fitness difference ', Delta~Theta)), 
+  labs(x = expression(paste('Cohesion difference ', Delta~Theta)), 
        y = expression(paste('Similarity ', italic(S),
                             '(',italic(C[P]),','
                             ,italic(C[R]),')')))+

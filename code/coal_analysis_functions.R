@@ -240,3 +240,4 @@ binning = function(x, precision){
 
 floor_dec <- function(x, level=1) round(x - 5*10^(-level-1), level)
 ceiling_dec <- function(x, level=1) round(x + 5*10^(-level-1), level)
+range01 <- function(x){(x-min(x))/(max(x)-min(x))}
