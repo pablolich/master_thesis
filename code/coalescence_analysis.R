@@ -13,6 +13,7 @@ library(colorspace)
 library(plotwidgets)
 library(RColorBrewer)
 library(wesanderson)
+library(zoo)
 
 
 source('coal_analysis_functions.R')
@@ -144,18 +145,51 @@ ggplot(data = time_series, aes(x = t, y = F, colour = as.factor(n_simulation)))+
 inter_evol = read.table('../data/interaction_evolution.csv', sep = ',', header = T,
                          row.names = 1)
 
-#Get average curve for dying people, and average curve for surviving people, and compare.
-extinct_before = inter_evol[inter_evol$survivor == 0,]
-#extinct_before = extinct[extinct$interaction != 0,]
-mean_extinct = aggregate(extinct_before[, 3], list(extinct_before$t), mean)
-extant = inter_evol[inter_evol$survivor != 0,]
-mean_extant = aggregate(extant[, 3], list(extant$t), mean)
+# #Get average curve for dying people, and average curve for surviving people, and compare.
+# extinct_before = inter_evol[inter_evol$survivor == 0,]
+# #extinct_before = extinct[extinct$interaction != 0,]
+# mean_extinct = aggregate(extinct_before[, 3], list(extinct_before$t), mean)
+# extant = inter_evol[inter_evol$survivor != 0,]
+# mean_extant = aggregate(extant[, 3], list(extant$t), mean)
 #Get rid of 0 so tha the mean doesn't go down artificially
-inter_evol_no0 = inter_evol[!(inter_evol$survivor == 0 & inter_evol$interaction == 0),]
-mean_tot = aggregate(inter_evol_no0[,3], list(inter_evol_no0$t), mean)
+inter_evol_no0 = inter_evol[!(inter_evol$survivor == 0 & 
+                              inter_evol$interaction == 0 |
+                              inter_evol$t > 1000),]
+mean_tot = aggregate(inter_evol_no0[,4:6], 
+                     list(inter_evol_no0$t,
+                          inter_evol_no0$n_simulation), 
+                     mean)
+#Average plot
+h_t = hist(mean_tot$Group.1, 
+         breaks=seq(floor_dec(min(mean_tot$Group.1, 1)),
+                    ceiling_dec(max(mean_tot$Group.1), 1), 
+                    length.out = 50))
+#Find the interval containing each element of delP2 in breaks.
+ind_av = findInterval(mean_tot$Group.1, h_t$breaks)
+#Bin similar data together
+time = rep(0, length(unique(ind_av)))
+interaction = rep(0, length(unique(ind_av)))
+facilitation = rep(0, length(unique(ind_av)))
+competition = rep(0, length(unique(ind_av)))
+interaction_error = rep(0, length(unique(ind_av)))
+j = 1
+for (i in (unique(ind_av))){
+  #Average equivalent measurements by bin
+  av_data = mean_tot[which(ind_av == i),]
+  time[j] = median(av_data$Group.1)
+  interaction[j] = median(av_data$interaction)
+  facilitation[j] = median(av_data$facilitation)
+  competition[j] = median(av_data$competition)
+  interaction_error[j] = sd(av_data$interaction)
+  j = j+1
+}
+plot(time, facilitation-competition, col = 'green', ylim = c(-0.11,0.5))
+points(time, rollmean(competition, 2))
+points(time, facilitation, col = 'red')
+
 plot(mean_tot$Group.1, mean_tot$x, log = 'x')
 ggplot()+
-  geom_point(data = inter_evol, aes(colour  =  log10(abundance+1), 
+  geom_line(data = inter_evol, aes(colour  =  log10(abundance+1), 
                                    alpha = as.factor(survivor), 
                                    x = t, 
                                    y = interaction, 
