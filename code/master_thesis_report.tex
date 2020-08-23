@@ -10,8 +10,8 @@
 \usepackage{relsize}
 \usepackage{braket}
 \usepackage{dirtytalk}
-
-
+\usepackage{lmodern}
+\newlength\longest\clearpage
 
 \newcommand{\wordcount}{\input{count2.sum}} %Word counting
 
@@ -45,9 +45,29 @@
 
 	\newgeometry{top=1.2in,bottom=1.2in,right=1.2in,left=1.2in} %Change geometry
 	
+	\clearpage
+	
+	\thispagestyle{empty}
+	\null\vfill
+	
+	\settowidth\longest{Not that these conclusions will always be rigorously in accord with the facts}
+	\begin{center}
+	\parbox{\longest}{%
+		\raggedright{%
+			\say{Not that these conclusions will always be rigorously in accord with the facts. Far from it. But one can at least consider them as a theme on which nature embroiders infinite variations of reality and by virtue of this they constitute a theoretical base for our work.}\par\bigskip
+		}   
+		\raggedleft{W. R. Thompson, 1922}\par%
+	}
+\end{center}
+	\vfill\vfill
+	
+	\clearpage
+	
 	\begin{abstract}
 		Community assembly, the process whereby species come together and interact to form functioning and coherent aggregations, is an old-age unsolved problem in ecology. In the microbial world, it is common that whole communities come into contact with each other and reassemble into a new community. This process has been termed community coalescence. The mechanisms that govern these events are poorly understood, partly because theoretical work in community coalescence rarely considers communities with mutualistic interactions, which are pervasive in microbial consortia. In this work, I use a new consumer-resource model to simulate communities harbouring competitive and mutualistic interactions, and propose a measure of community cohesion that predicts the outcome of microbial community coalescence. The proposed metric explicitly quantifies the so-called \textit{cohesivness} exhibited by microbial communities. It reproduces an important previous result, i.e., that more cohesive communities are more successful in community coalescence events, while pinning it down to more realistic assumptions about the interactions in the community. These results suggest that the collective coherence exhibited by coalescing communities is a general consequence of ecological interactions, resource partitioning, and the community shaping its environment. The proposed cohesion measure can be used to guide coalescence experiments in which different communities are successively combined until a desired beneficial functioning is reached.
 	\end{abstract}
+
+	
 	
 	\tableofcontents
 	\newpage
