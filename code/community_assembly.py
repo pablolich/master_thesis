@@ -77,7 +77,7 @@ def main(argv):
     #place)
     N_reac = comb(m, 2, exact = True)
     #Perform n_simul simulations
-    n_simul = 500 
+    n_simul = 2000 
     #Generate reaction network for each strain
     tot = s*n_simul
     n_reac_s = np.zeros(tot, dtype = 'int')

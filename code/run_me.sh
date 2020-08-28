@@ -15,5 +15,5 @@ Rscript analysis_community_coalescence.r
 echo -e "\nGENERATING REPORT"
 cd writeup
 #Run latex document with the write up
-bash ~/CompileLaTeXstudio.sh Lechon_Pablo_CMEE_MSc_2020 1>../Sandbox/warnings.txt
+bash ~/CompileLaTeXstudio.sh Lechon_Pablo_CMEE_MSc_2020 1>../sandbox/warnings.txt
 cd ..
