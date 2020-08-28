@@ -165,7 +165,7 @@ model_example = ggplot(data_nice, aes(x = t, y = population,
   scale_x_continuous(limits = c(1, 5e4), trans = 'log10', expand = c(0, 0), 
                      labels = c('1', '1e2', '1e3')) + 
   scale_y_continuous(limits = c(-1, 35), expand = c(0, 0))+
-  labs(x = 't [a.u.]',
+  labs(x = 'time',
        y = expression(paste('Abundance ',italic(N[alpha]),' [a.u.]')))+
   guides(color=guide_legend(expression('n'[r]), 
                             title.hjust = 0.5))+
@@ -301,40 +301,39 @@ n_reac_stablestate = ggplot(num_reac_fitness, aes(x = n_reac,
   ggsave(filename = '../results/n_reac_stablestate.pdf', width = 4.3, height = 4)
 
 ########################################################################################
-  bar_plot = ggplot(data=data_barplot, aes(x=n_reac, 
-                                y=n_strains, 
-                                fill=as.factor(random_assembled))) +
-    geom_bar(stat="identity", color="black", position=position_dodge(),
-             width = 0.7)+
-    theme(panel.background = element_blank(),
-          panel.grid = element_blank(),
-          panel.border = element_rect(colour = "black", fill=NA, size = 1),
-          axis.text = element_text(size = 15), 
-          axis.title.x = element_text(size = 20),
-          axis.title.y = element_text(size = 19),
-          legend.position = c(0.35, 0.15),
-          legend.text = element_text(size = 15),
-          legend.title = element_blank(),
-          legend.key.size = unit(5, 'mm'),
-          aspect.ratio = 1,
-          axis.text.y.right = element_text(colour = "#F21A00"),
-          axis.line.y.right = element_line(colour = "#F21A00"),
-          axis.text.y.left = element_text(colour = "#3B9AB2"),
-          axis.line.y.left = element_line(colour = "#3B9AB2"))+
-    scale_fill_manual(values = c("#3B9AB2", "#F21A00"),
-                      labels = c('Random', 'Assembled'))+
-    scale_x_continuous(limits = c(0.5, 15.5),
-                       breaks = c(1,5,10,15))+
-    scale_y_continuous(breaks = c(0, 0.5, 1),
-                       labels = c('0', '750', '1500'),
-                       expand = c(0,0),
-                       sec.axis = sec_axis(trans = ~ . /2,
-                                           breaks = c(0, 0.25, 0.5),
-                                           labels = c('0','375', '750')))+
-    labs(x = expression(italic(n[r])),
-         y = 'Frequency')
-    
-    
+  # bar_plot = ggplot(data=data_barplot, aes(x=n_reac, 
+  #                               y=n_strains, 
+  #                               fill=as.factor(random_assembled))) +
+  #   geom_bar(stat="identity", color="black", position=position_dodge(),
+  #            width = 0.7)+
+  #   theme(panel.background = element_blank(),
+  #         panel.grid = element_blank(),
+  #         panel.border = element_rect(colour = "black", fill=NA, size = 1),
+  #         axis.text = element_text(size = 15), 
+  #         axis.title.x = element_text(size = 20),
+  #         axis.title.y = element_text(size = 19),
+  #         legend.position = c(0.35, 0.15),
+  #         legend.text = element_text(size = 15),
+  #         legend.title = element_blank(),
+  #         legend.key.size = unit(5, 'mm'),
+  #         aspect.ratio = 1,
+  #         axis.text.y.right = element_text(colour = "#F21A00"),
+  #         axis.line.y.right = element_line(colour = "#F21A00"),
+  #         axis.text.y.left = element_text(colour = "#3B9AB2"),
+  #         axis.line.y.left = element_line(colour = "#3B9AB2"))+
+  #   scale_fill_manual(values = c("#3B9AB2", "#F21A00"),
+  #                     labels = c('Random', 'Assembled'))+
+  #   scale_x_continuous(limits = c(0.5, 15.5),
+  #                      breaks = c(1,5,10,15))+
+  #   scale_y_continuous(breaks = c(0, 0.5, 1),
+  #                      labels = c('0', '750', '1500'),
+  #                      expand = c(0,0),
+  #                      sec.axis = sec_axis(trans = ~ . /2,
+  #                                          breaks = c(0, 0.25, 0.5),
+  #                                          labels = c('0','375', '750')))+
+  #   labs(x = expression(italic(n[r])),
+  #        y = 'Frequency')
+
 ##########################################################################################
 #Put all plots together
   tot_assembly = ggdraw() +
@@ -409,7 +408,7 @@ interaction_plot = ggplot(data = averaged_data, aes(x = time, y = interaction))+
   scale_x_continuous(breaks = c(0, 250, 500))+
   scale_y_continuous(breaks = c(-1,-0.55,-0.1),
                      labels = c('-1','-0.5', '0'))+
-  labs(x = 't [a.u.]', 
+  labs(x = 'time', 
        y = expression(paste(symbol("\341"),Theta,symbol("\361"))))
   
 #Plot inset
@@ -639,7 +638,7 @@ survival_proportion = ggplot(data = presence_proportion,
         axis.text = element_text(size = 20), 
         axis.title = element_text(size = 20),
         aspect.ratio = 1,
-        legend.position = c(0.27, 0.25),
+        legend.position = c(0.29, 0.25),
         legend.background = element_blank(),
         legend.margin = margin(t = -15, r = 0, b = -15, l = 0, unit = "pt"),
         legend.key = element_blank(),
@@ -650,8 +649,10 @@ survival_proportion = ggplot(data = presence_proportion,
                        guide = guide_colourbar(direction = "horizontal", 
                                                 title.position = "top"))+
   scale_shape_manual(values = c(24,21),
-                     labels = c('performance', expression(paste('cohesion ',
-                                                                italic(s[alpha])))),
+                     labels = c(expression(paste('performance ', 
+                                                 italic(f[alpha]))), 
+                                expression(paste('cohesion ',
+                                                 italic(s[alpha])))),
                      guide = guide_legend())+
   # scale_colour_manual(values = c("#F21A00", "#3B9AB2"),
   #                     labels = c('weighted', 'unweighted'))+
@@ -736,8 +737,8 @@ fitness_abundance = ggplot(average_fitness_abundance, aes(x = fitness, y = K_av)
   theme(panel.background = element_blank(), 
         panel.border = element_rect(colour = "black", fill=NA, size = 1),
         axis.text = element_text(size = 15), 
-        axis.title.x = element_text(size = 17),
-        axis.title.y = element_text(size = 19),
+        axis.title.x = element_text(size = 25),
+        axis.title.y = element_text(size = 25),
         legend.position = c(0.85, 0.7),
         legend.text = element_text(size = 15),
         legend.title = element_text(size = 20),
@@ -746,7 +747,7 @@ fitness_abundance = ggplot(average_fitness_abundance, aes(x = fitness, y = K_av)
         aspect.ratio = 1)+
   # scale_x_continuous(breaks = c(1, 5, 10, 15), 
   #                    labels = c('1', '5', '10', '15'))+
-  labs(x = 'Individual Fitness', 
+  labs(x = expression(paste('Individual Fitness ', italic(f)[alpha])),
        y = expression(italic(symbol("\341")*N[infinity]^0*symbol("\361"))))+
   ggsave(filename = '../results/fitness_abundance.pdf', width = 4.3, height = 4)
 

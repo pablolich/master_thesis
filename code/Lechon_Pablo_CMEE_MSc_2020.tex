@@ -1,0 +1,370 @@
+\documentclass[titlepage,11pt]{article}
+\usepackage{graphicx} %To include figures
+\graphicspath{{../results/}}
+\usepackage{lineno} % To count lines
+\usepackage{setspace} %To change line spacing
+\usepackage{natbib} % To cite
+\usepackage{amsmath}
+\usepackage[paper=a4paper,margin=2cm]{geometry}
+\usepackage{subcaption}
+\usepackage{relsize}
+\usepackage{braket}
+\usepackage{dirtytalk}
+\usepackage{lmodern}
+\usepackage{color}
+\usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
+\usepackage[colorlinks=true,
+					linkcolor=black,
+					urlcolor=blue,
+					citecolor=gray]{hyperref}
+\usepackage[outercaption]{sidecap}
+\usepackage[ruled]{algorithm2e}
+\newlength\longest\clearpage
+\setlength{\parindent}{15pt}
+\newcommand{\wordcount}{\input{count2.sum}} %Word counting
+\onehalfspacing
+
+\begin{document}
+	\begin{titlepage}
+		\includegraphics{imperial.png} 
+		\vspace*{\fill}
+		\begin{center}
+			\hfill \break
+			\hfill \break
+			{\LARGE \textbf{Coalescence of cohesive microbial communities}}\par
+			\hfill \break
+			\hfill \break
+			Pablo Lechón\par
+			Supervisor: Dr. Samraat Pawar\par
+			August 2020\par
+		\end{center}
+		\vspace*{\fill}
+		
+		\begin{center}
+			A thesis submitted in partial fulfilment of the requirements for the degree of Master of Science at Imperial College London
+			
+			Formatted in the journal style of \textit{Ecology and Evolution}
+			
+			Submitted for the MSc in Computational Methods in Ecology and Evolution
+		\end{center}
+	\end{titlepage}
+
+	\newgeometry{top=1.2in,bottom=1.2in,right=1.2in,left=1.2in} %Change geometry
+	
+	\thispagestyle{empty}
+	\textbf{Declaration}: I conceived the study. Jacob Cook, PhD student, jointly supervised by Professor Robert Endres (biophysics group) and Dr Samraat Pawar (theoretical ecology group), provided me with the novel consumer-resource model. I modified the cost function of the model and implemented a vectorized version of it in Python. I carried the analysis and drafted the manuscript. 
+	\clearpage
+	
+	\thispagestyle{empty}
+	\null\vfill
+	
+	\settowidth\longest{Not that these conclusions will always be rigorously in accord with the facts}
+	\begin{center}
+	\parbox{\longest}{%
+		\raggedright{%
+			\say{Not that these conclusions will always be rigorously in accord with the facts. Far from it. But one can at least consider them as a theme on which nature embroiders infinite variations of reality, and by virtue of this, they constitute a theoretical base for our work.}\par\bigskip
+		}   
+		\raggedleft{W. R. Thompson, 1922}\par%
+	}
+\end{center}
+	\vfill\vfill
+	
+	\clearpage
+	
+	\begin{abstract}
+		Community assembly, the process whereby species come together and interact to form functioning and coherent aggregations, is an age-old problem in ecology. In the microbial world, it is common that whole communities come into contact with each other and reassemble into a new community. This process has been termed community coalescence. The mechanisms that govern these events are poorly understood, partly because theoretical work in community coalescence rarely considers communities with mutualistic interactions, which are pervasive in microbial consortia. In this work, I use a new consumer-resource model to simulate communities harbouring competitive and mutualistic interactions, and propose a measure of community cohesion that predicts the outcome of microbial community coalescence. The proposed metric explicitly quantifies the so-called \textit{cohesivness} exhibited by microbial communities. It reproduces an important previous result, i.e., that more cohesive communities are more successful in community coalescence events, while pinning it down to more realistic assumptions about the interactions in the community. These results suggest that the collective coherence exhibited by coalescing communities is a general consequence of ecological interactions, resource partitioning, and the community shaping its environment. The proposed cohesion measure can be used to guide coalescence experiments in which different communities are successively combined until a desired beneficial functioning is reached.
+	\end{abstract}
+
+	\pagenumbering{arabic} 
+	
+	\begin{linenumbers}
+		\section{Introduction}
+		\hspace{15pt}Microbial communities are widespread throughout our planet, from the deep ocean to the human gut, and play a critical role in natural processes ranging from animal development and host health \citep{Huttenhower2012} to biogeochemical cycles \citep{Falkowski2008}. These communities are very complex, often harbouring hundreds of species \citep{Gilbert2014}, making them hard to characterize. Recently, DNA sequencing has allowed a high-resolution mapping of these consortia, opening a niche for ambitious theorists and experimentalists to collaboratively disentangle the complexity of these systems \citep{Marsland2019, Goldford2018, Goyal2018, Friedman2017, Costello2012, Vila2019}. One of the problems yet to be solved is community assembly -- the process by which species come together and interact to establish a community. Unlike in the macroscopic world, entire microbial communities often move together to a new region, where they encounter another community. The process by which two or more communities that were previously separated join and reassemble into a new community has been termed \textit{community coalescence} \citep{Rillig2015}. This type of event repeatedly happens in nature due to abiotic (wind, tides or river flow), biotic (animal courtship, parent-offspring interactions or leaves falling), and anthropogenic (industrial anaerobic digestion, agriculture, between-human contact) factors \citep{Castledine2020}. Despite the frequency and importance of microbial community coalescence, the mechanisms responsible for the community structure and function resulting from coalescence events remain poorly understood \citep{Rillig2016b}.\par
+		Early mathematical models of community-community invasion revealed that when two communities previously separated by a barrier merge due to its removal, asymmetrical dominance of one community over the other one is likely to occur \citep{Gilpin1994, Toquenaga1997}. As an explanation for this observation, it was argued that, because communities have been assembled through a history of competitive exclusion, they are likely to compete with each other as coordinated entities, rather than as a random collection of species. This result is also shown in new theoretical work, where consumer-resource models are used to show that coalescing microbial communities exhibit an emergent cohesiveness \citep{Tikhonov2016, Tikhonov2017}. These findings suggest that communities arising from the struggle for existence of its members display a certain level of coherence. These communities have been termed Metabolically Cohesive [microbial] Consortium (MeCoCos) by \citet{Pascual-Garcia2020} and suggested to be pervasive in microbial communities.\par 
+		Recent results from coalescence experiments of methanogenic communities suggest that during a coalescence event between two communities, multiple taxa from the same community act as cohesive units and are selected together (ecological co-selection) \citep{Sierocinski2017}. Further experimental evidence of co-selection in community coalescence has been reported in \citet{Lu2018}, where it was shown that the invasion success of a given taxon is determined by its community members. The microbial communities used in these experiments are characterized by complex cross-feeding interactions \citep{Hansen2007, Lawrence2012, Embree2015}, where the metabolic by-products of one species are substrates for others. Furthermore, the type of interactions present in a community has been suggested as a factor that might affect the outcome of community coalescence \citep{Castledine2020}.  Yet, theoretical models used in community coalescence studies so far have considered competition between species as the only force driving community assembly.\par 
+		In this work, I explore the combined role of other types of interactions, namely, competition and mutualism, which appear to be ubiquitous in microbial communities. First, I use a new consumer-resource model that includes both facilitation of metabolites via by-product secretion, and competition for substrates, to simulate many instances of community assembly. Second, I propose a metric of community cohesion that accounts for both competitive and mutualistic interactions, and I measure the cohesion level in the simulated communities. Third, I apply the proposed metric to predict the outcome of microbial community coalescence events.
+		\section{Methods}
+			\hspace{15pt}Here, I first lay out the model used to simulate communities. Second, I detail the procedure I follow to assembly many synthetic microbial communities. Third, I present the metric of cohesion and use it in the simulated communities.
+			\subsection{Consumer-resource model with cross-feeding interactions}
+				\hspace{15pt}In order to simulate communities with cross-feeding interactions, I use a consumer-resource model based on the work of \citet{Marsland2019}.\par 
+				Consider an environment with $ m $ resources present in different concentrations $ C_{\beta} $, where $ \beta \in \{1 \dots m\} $. Let now $ N_{\alpha} $ denote the abundance of each bacterial strain $ \alpha $,  present in the environment, $ \text{ where } \alpha \in \{1 \dots s\} $. Each species is uniquely characterized by the metabolic strategy it uses to harvest resources. This strategy is encoded in its reaction network $ G_{\alpha} $, a collection of chemical reactions between the metabolites in the environment that produce energy that is used by bacteria for survival and replication (Figure \ref{fig:model}). If we now allow the dynamics of this system to unfold, the concentration of each metabolite $ C_\beta $ determines the dynamics of the abundances $ N_\alpha$ of each species, which harvest resources through their different metabolic strategies. The changes in species abundance, therefore, translate into changes in the total supply and demand of resources. In turn,  resource concentrations $ C_{\beta} $ are depleted until equilibrium is reached. A more rigorous description of the model, along with its mathematical form will now be presented.\par 
+				\begin{figure}
+					\centering
+					\includegraphics[width=\textwidth]{model_sketch.pdf}
+					\caption{\textbf{Schematic of the model}. (left) Consider a chemostat where $ m $ metabolites are steadily supplied at rate $ \kappa $ and diluted at rate $ \gamma $. Different bacterial strains coexist in the chemostat, and they consume the metabolites in the environment, $ C_{\beta} $ through their reaction networks $ G_{\alpha} $ (right), to obtain the necessary power $ J_{\alpha} $ to increase their abundance $ N_{\alpha} $. The green arrows in the magnified portion emphasize that species $ \alpha $ (yellow) facilitates metabolites to species $ \alpha' $ (blue) and vice versa. The double arrows shown within the cells denote the fact that I am considering reversible reactions, so the reaction rate depends on both substrate and product concentrations.}
+					\label{fig:model}
+				\end{figure} 
+				Consider the population dynamics of $ s $ consumers (eg. bacterial strains) that feed on $ m $ resources. In this model,  a species  is defined by the metabolic strategy it uses to harvest energy from the environment. Let $ G_{\alpha}(\mathcal{M}, \mathcal{N}) $ be the metabolic network of species $ \alpha $ (in the network theory sense), where $ \mathcal{M} $ is a set of nodes $ \mathcal{M}  $ = \{$x:x $ is an integer from the interval $ [1, m]  $ labeling the metabolite\} and $ \mathcal{N} $ a set of uni-directed edges $ \mathcal{N}  $ = \{$ (x, y): x \textrm{, } y \in \mathcal{M} $ and $ x < y $ ($ x $ and $ y $ are the product and the substrate of a chemical reaction, respectively)\}. The growth power of species $ \alpha $,  $ J_{\alpha}$ will be given by the product of the amount of generated energy per reaction event $ \eta_{i} $ and rate $ q_{i} $ of each reaction, summed across all reactions in $ \mathcal{N} $.
+				\begin{linenomath*}	
+					\begin{equation}
+					J_{\alpha} = \sum_{i = 1}^{|\mathcal{N}|} \ q_i \eta_i
+					\end{equation}
+				\end{linenomath*}
+				where $ | \ \ | $ denotes cardinality of a set. Refer to Supplementary Information (SI), subsection \ref{subsed:reversible_enzyme_kinetics} for specifications on $ q $ and  $ \eta $ .\par
+				Every species has a maintenance cost $ \chi_{\alpha} $ that represents the required energy to sustain life, which is assumed to take the form
+				\begin{linenomath*}	
+					\begin{equation}\label{eq:cost_function}
+					\chi_{\alpha} = \chi_0\sum_{\mathcal{N}}(y - x)
+					\end{equation}
+				\end{linenomath*}
+				where $ \chi_0 $ is the average cost per reaction, $ x $ and $ y $ are the substrate and the product of the reaction, respectively, and the summation term adds up the metabolite gap of all reactions. Therefore, the maintenance cost of one species increases if one or both of the following quantities increases: (1) the amount of enzymes a species is able to produce, and (2) the energy yielded by the reactions in which these enzymes are involved. Intuitively, the more enzymes a species is capable of expressing, the higher is the probability that at least two of them require starkly different conditions for optimal function. Therefore, expressing those enzymes simultaneously would imply maintaining two separate compartments, and incur in extra cost (Supplementary material in \citet{Tikhonov2017}). The effect of the cost function (equation \ref{eq:cost_function}) is to ensure that neither generalists nor specialists, are systematically favoured during the community assembly.\par 
+				Under this parametrization, the time evolution of the population of species $ \alpha $ can be written as
+				\begin{linenomath*}	
+					\begin{equation}\label{eq:dNdt}
+					\dfrac{dN_{\alpha}}{dt} = g_{\alpha}N_{\alpha}\left[J_{\alpha}-\chi_{\alpha}\right] 
+					\end{equation}
+				\end{linenomath*}
+				where $ g_{\alpha} $ is a proportionality constant relating energy to abundance of strain $ \alpha $ \par 
+				The dynamics of the resources depend on the incoming and outgoing resource fluxes due to the biochemical reactions taking place inside bacteria, as well as the external resource dynamics. The incoming resource flux of metabolite $ \beta $  generated by strain $ \alpha $ is its rate of consumption due to all the biochemical reactions possessed by $ \alpha $ in which $ \beta $ is a substrate. The outgoing flux is that due to reactions in which $ \beta $ is a product.
+				\begin{linenomath*}	
+					\begin{align}
+					\begin{split}
+					v^{in}_{\alpha \beta} &= \sum_{\mathcal{S}} q   \qquad \textrm{with}  \quad  \mathcal{S} \equiv \mathcal{N} \cap \{(x = \beta, y)\}\\
+					v^{out}_{\alpha \beta} &= \sum_{\mathcal{P}} q , \qquad \textrm{with}  \quad  \mathcal{P} \equiv \mathcal{N} \cap \{(x, y = \beta )\}
+					\end{split}
+					\end{align}
+				\end{linenomath*}
+				External resource dynamics are modelled as a constant supply rate minus a dilution rate assuming that resource molecules leak from the system proportionally to concentration.  
+				\begin{linenomath*}	
+					\begin{equation}
+					h_{\beta}  =  \kappa - \gamma C_{\beta}
+					\end{equation}
+				\end{linenomath*}
+				Therefore, the variation with time of the concentration of metabolite $ \beta $ has the form
+				\begin{linenomath*}	
+					\begin{equation}
+					\dfrac{dC_{\beta}}{dt} = h_{\beta} + \sum_{{\alpha} = 1}^{s} \left(v_{{\alpha}\beta}^{in} -v_{{\alpha}\beta}^{out} \right)N_{\alpha} \label{eq:dCdt}
+					\end{equation}
+				\end{linenomath*}
+				Thus, the model is a system of $ s + m $ coupled differential equations completely specified by equations \ref{eq:dNdt} and \ref{eq:dCdt}.
+				\subsection{Community Assembly}
+				 \hspace{15pt}I use the above model to assemble $ n_{s} = 2000 $ communities by numerically integrating the set of equations in \ref{eq:dNdt} and \ref{eq:dCdt}. Each simulation starts with 10 bacterial strains ($ s = 10 $) in an environment with 15 different resources ($ m = 15 $) and a random realization of the metabolic strategy, $ G_{\alpha} $, for each species.\par	
+				The values of the parameters of the model remain constant throughout all simulations, and have been chosen motived by biological processes (total free energy of photosyntesis or glucose respiration) and to avoid pathological situations (species always being saturated or maintenance being higher than the maximum amount of energy that can be harvested) (SI, subsection \ref{subsec:parameters}, table \ref{tab:parameters}). The reason for this is that my aim is not to parametrize the model to reveal large-scale patterns found in experiments (although that would be a fruitful endeavour because of the rich parameter space of this model). Rather, I use it to simulate a set of microbial communities with cross-feeding interactions that will be later used in the community coalescence experiments.\par
+				In order to do so, I first create $ s \cdot n_{s}  $ random reaction networks, $ G_{\alpha}(\mathcal{M}, \mathcal{N}) $ (one for each strain) using the following  procedure. Consider, the $ m \times m $ adjacency matrix $ A^{\alpha}_{ij} $, whose elements, the edges $ (i, j) $ of $ G_{\alpha}$, represent chemical reactions. Since the reaction network is hierarchical ($ i < j $, SI, subsection \ref{subsed:reversible_enzyme_kinetics}), the adjacency matrix is an upper triangular matrix with zeros in the main diagonal (Figure \textbf{\ref{fig:community_assembly_results}B}), and the reactions possesed by strain $ \alpha $ can be expressed as $ (i, i + k) $, where $ k $ represents the k$ ^{th} $ diagonal of $ A $ ($ k \in \{1, \dots m - 1 \}$ with $ k = 0 $ being the main diagonal), and $ i $ is the row number of one of its elements ($ i = 1 \dots m $). The reaction network $ G_{\alpha} $ is constructed by sampling $ n_{r} $ reactions from  different diagonals, with decreasing probability as the order of the diagonal increases. Thus, I choose $ n_{r} $ pairs of integers $ (i , k )$ according to the algorithm summarized below.	
+				\begin{enumerate}
+					\item Choose $ n_{r} $ by sampling it from a uniform distribution $ U \left(1, {m}\right) $
+					\item \sloppy Choose $ k $  by sampling one value from a truncated normal distribution $N\left(1,  \sqrt {m - 1}\right)$ with limits $ [1, m-1] $, and rounding it to the closest integer.
+					\item Sample $ i $ from a uniform distribution of integers $ U(0, m-k) $.
+					\item The reaction $ (i, i + k) $ is stored, and the process is repeated until $ n_{r} $ reactions have been sampled.
+				\end{enumerate}
+				\hspace{15pt}Several things are important to note about this algorithm. Firstly, sampling $ k $ from a truncated normal distribution ensures that high metabolite gaps (very energetic reactions) are not likely to happen. This introduces a bias against the presence of organisms with few and very energetic reactions, which are rare in microbial communities. Second, the truncation limits in step 2 have been chosen to respect the imposed constraint that reactions can only be of the form $ i < j $. Third, the upper limit of the uniform distribution from which $ i $ is sampled is bounded by $ k $, the diagonal we are sampling from. \par
+				When the sampling of reaction networks is completed, equations \ref{eq:dCdt} and \ref{eq:dNdt} are integrated using a Runge Kutta method \citep{Dormand1980} with initial conditions $ N_{\alpha}(t = 0) = 2 $ and $ C_{\beta}(t = 0) = 0 $.
+				\subsection{A metric of community cohesion}\label{subsec:cohesion_metric}
+					\hspace{15pt}The cohesion of a community is ultimately determined by the nature of the interactions between its members. Since I am considering two types of interactions - competition and mutualism - the simplest way to render them into a mathematical expression is to subtract them.
+					\begin{linenomath*}
+						\begin{equation}\label{eq:cohesion_idea}
+							Cohesion = Facilitation - Competition
+						\end{equation}
+					\end{linenomath*}
+					Measuring levels of facilitation and competition within a microbial community is experimentally challenging. However, the metabolic strategies of each species are well determined in this theoretical framework. Therefore, I use the reaction network of each bacterial strain to compute their competition and facilitation indices with the rest of the species in the community.\par 
+					Let $ s_1 $ and $ s_2 $ be two sequences of integers labeling metabolites. I am interested in measuring  their \textit{overlapping degree} $ \xi(s_1, s_2) $, ie, the proportion of metabolites of $ s_1 $ that intersect with $ s_2 $ summed with the proportion of metabolites of $ s_2 $ that intersect with $ s_1 $, normalized to 1.
+					\begin{linenomath*}	
+						\begin{equation}\label{eq:proportion_shared}
+							\xi (s_1, s_2) = \frac {1}{2} \sum_{k \in s_1 \cap s_2} \left(\frac{D_{s_1}(k)}{|s_1|} + \frac{D_{s_2}(k)}{|s_2|}\right)
+						\end{equation}
+					\end{linenomath*}	
+					Here, k takes the values in the set that result form intersecting $ s_1 $ and $ s_2 $. $ D_s(k) $ is the number of elements from the sequence $ s $ that are equal to $ k $. Vertical bars $  | \ \ | $ express cardinality of a sequence. The purpose of all denominators in equation \ref{eq:proportion_shared} is to normalize $ \xi $ to 1.\par
+					One way to capture the facilitation of a community is by calculating its facilitation matrix $ F $, which is composed of the facilitation indices of all possible ordered pairs $ i, j $ of species in the community. Precisely, the facilitation index $ f_{ij} $ of species $ i $ towards species $ j $, is given by the overlapping degree of the sequence of products $ y_i $ of species $ i $,  with the sequence of substrates $ x_j $ of species $ j $. Equivalently, the competition matrix $ C $ gathers the competition level of the community. The competition index between species $ i $ and $ j $,  $ c_{ij} $  is given by the overlapping degree of the sequence of substrates $ x_i $ of species $ i $,  and the sequence of substrates $ x_j $ of species $ j $. Thus, 
+					\begin{linenomath*}	
+						\begin{equation}\label{eq:fac _comp}	
+							F_{ij} = 
+							\begin{cases}
+							\xi(y_i, x_j)&\quad\text{if } i \neq j \\
+							0&\quad\text{if } i = j \\
+							\end{cases}
+							\hspace{50pt}
+							C_{ij} = 
+							\begin{cases}
+							\xi(x_i, x_j)&\quad\text{if } i \neq j \\
+							0&\quad\text{if } i = j \\
+							\end{cases}
+						\end{equation}	
+					\end{linenomath*}
+					Note that facilitation is directional but competition is not. This implies that $ F_{ij} \neq F_{ji}$ and $ F $ is not symmetric, but $ C_{ij} = C_{ji} $ and $ C $ is symmetric.\par
+					Following the idea sketched in equation \ref{eq:cohesion_idea}, a cohesion matrix $ \Psi $ can be defined using equations in \ref{eq:fac _comp},  as an upper triangular $ s \times s $ matrix whose elements are given by
+					\begin{linenomath*}
+						\begin{equation}
+							\Psi_{ij} = 
+							\begin{cases}
+								\dfrac12 \left(F_{ij} + F_{ji}\right) -  C_{ij} & \text{ if }  \quad i < j \\
+							    \quad\quad\quad\quad	0 & \text{ if } \quad  i \geq j\\
+							\end{cases}
+						\end{equation}
+					\end{linenomath*}
+					I choose to define $ \Psi $ as an upper triangular matrix because cohesion is not a directional measure; two species are not more cohesive if measured from $ i $ to $ j $, than from $ j $ to $ i $. Instead, cohesion is a pairwise estimate independent of the direction of measure, so its matrix representation should be either symmetric or triangular. The triangular definition of $ \Psi $ allows me to interpret it as the adjacency matrix of a directed weighted network of cohesion between species. Under this interpretation, it is natural to define the total cohesion level of species $ \alpha $ with the rest of species in the network, as the sum of all the edge weights connected to node $ \alpha $
+					\begin{linenomath*}
+						\begin{equation}\label{eq:strength}
+						s_{\alpha} = \sum_{j \neq \alpha} \Psi_{\alpha j}
+						\end{equation}
+					\end{linenomath*}
+					\hspace{15pt}Another relevant measure steming from the definition of $ \Psi $ is the community-level cohesion $ \Theta $, calculated as theaverage of all its weights.
+					\begin{linenomath*}
+						\begin{equation}\label{eq:theta}
+						\Theta = \frac{1}{T_s}\sum_{i < j}\Psi_{ij}
+						\end{equation}
+					\end{linenomath*}
+					Where $T_s = {s+1 \choose 2} $ is the number of elements being summed: those in the upper diagonal of $ \Psi $ (the triangular number of order $ s $).\par
+					An example of this network is shown in figure \textbf{\ref{fig:interaction_evolution}A} (before community assembly) and \textbf{\ref{fig:interaction_evolution}B} (after community assembly).
+		\section{Results}
+			\begin{figure}
+				\centering			
+				\includegraphics[width=\textwidth]{community_assembly_plots.pdf}
+				\caption{\textbf{Results from community assembly simulations}. Plots (\textbf{A}) and (\textbf{B}) exemplify one community assembly event and  (\textbf{C}) and (\textbf{D}) convey results across simulations. (\textbf{A}) Time variation of species' abundance for one instance of community assembly with $ m = 15 $ metabolites and $ s = 10 $ species, each of which is characterized by a randomly generated reaction network. Equilibrium is reached after species with functionally redundant groups (those with similar metabolic capabilities) go extinct due to competitive exclusion. Time (x-axis) and population (y-axis) are measured in arbitrary units. Each time series is coloured according to $ n_r $, the number of reactions possessed by the reaction network of each strain. (\textbf{B}) Adjacency matrix of the community reaction network, obtained by summing the reaction network adjacency matrices of all species weighted by their respective carrying capacity: $ \Omega = \sum_{k = 1}^{s} N^k_{\infty}A_k  $. The community reaction network is unique for each community, and it constitutes a blueprint of how that community depletes resources in the environment. Note that, according to the imposed constraints, reactions where $ y < x $ are absent, and those where $ y \gg  x $, are rare. (\textbf{C}) Histogram of richness of the $ n_s $ simulations. (\textbf{D}). In blue, mean value of carrying capacity rescaled to 1 against the number of reactions $ n_r $. In red, survival probability against number of reactions $ n_r $. Species with fewer reactions (specialists) tend to be present at higher abundances than those with higher $ n_r $ (generalists), but they have a lower surviving probability.}
+				\label{fig:community_assembly_results}
+			\end{figure}
+			\begin{figure}
+			\centering			
+			\includegraphics[width=0.92\textwidth]{interaction_evolution_plots_all.pdf}
+			\caption{\textbf{Cohesion metric across community assembly events.} Cohesion network before (\textbf{A}) and after (\textbf{B}) community assembly. Thicker and red edges represent higher  cohesion coefficient $ \Psi_{ij} $ between its nodes, species $ i \text{ and } j $. The colour of the nodes changes from red to blue in anti-clockwise direction, indicating decreasing total cohesion level $ s_{\alpha} $. The size of the node represents the number of reactions possessed by that species. (\textbf{C}) Median survival probability after community assembly as a function of cohesion rank (circles) and individual performance rank (triangles) of species in the random community (before assembly) across all simulations. Circles are weighted by the cohesion rank measured in the assembled community, e.g., weight is maximum when the first ranked species in the random community remains first ranked after assembly. The dashed line is the average number of extinctions across simulations. Species with higher cohesion and individual performance are less likely to go extinct during community assembly. However, cohesion predicts survival probability better than individual performance. The colour of the points reflects the mean number of reactions of species in each rank. There is a weak correlation between the number of reactions and the survival probability. (\textbf{D})  Community-level cohesion averaged across all community assembly events,  $\braket{\Theta} $, as a function of time. Every time a species goes extinct during community assembly, the community cohesion is recalculated with the remaining species. On average, community assembly follows trajectories where community cohesion increases. (\textbf{D, inset}) Community competition and facilitation levels averaged across all simulations. Both decrease during community assembly, but competition decreases faster. Decrease of facilitation is explained by the positive correlation between $ \braket{C} $ and $ \braket{F} $ (Figure \ref{fig:community_coalescence_results}, A).}
+			\label{fig:interaction_evolution}
+		\end{figure}
+			\hspace{15pt}Relevant results stemming from the simulations of community assembly events are plotted in figure \textbf{\ref{fig:community_assembly_results}}. The first two figures convey information about the dynamics and the resource consumption map of one particular community. In figure \textbf{\ref{fig:community_assembly_results}A}, all abundances start increasing because all resources are present and steadily supplied. As the dynamics evolve, the community engineers its own environment by consumption of metabolites and secretion of by-products, causing the creation of ecological niches. During this process, species sorting results in competitive exclusion of species whose niches overlap. Alternatively, species whose niches are separate may engage in mutualistic relationships through metabolic complementarity (Figure \textbf{\ref{fig:model}}), resulting in a net benefit to the interacting partners \citep{Pascual-Garcia2020}. Figure \textbf{\ref{fig:community_assembly_results}B}, shows the community reaction network. It summarizes the metabolic strategy of the community as a whole. Note that all metabolites are being consumed (all rows have at least one non-zero element), which is to say, that all vacant niches are being occupied.\par
+			The community assembly simulations generated communities with richness spanning from 1 to 9 species (Figure \textbf{\ref{fig:community_assembly_results}C}), where specialists are, on average, more abundant than generalists (figure \textbf{\ref{fig:community_assembly_results}D}, blue points). This can be attributed to several specialists being able to deplete all resources through their combined action more efficiently than one generalist \citep{Pascual-Garcia2020}, thus, dominating the community at equilibrium. Note that in the simulated communities, while specialists tend to be present at higher abundances than generalists, their survival probability is lower (figure \textbf{\ref{fig:community_assembly_results}D}, red points). Generalists have more alternatives to obtain energy than specialists. Consequently, they are more resistant to extinctions.\par
+			During community assembly, I track the cohesion network adjacency matrix, $ \Psi $. An graphical representation of this network, corresponding to the instance of community assembly shown in figures \textbf{\ref{fig:community_assembly_results}A} and \textbf{\ref{fig:community_assembly_results}B}, is illustrated before and after assembly in figures \textbf{\ref{fig:interaction_evolution}A} and \textbf{\ref{fig:interaction_evolution}B}, respectively. In these figures, the nodes represent species, and the edges are weighted by their corresponding element in the cohesion matrix (represented in the figures by line thickness and colour). Each species has a different node size and colour. The size of the species encodes the number of reactions in its reaction network. The color encodes the node strength $ s_{\alpha} $ (equation \ref{eq:strength}).
+			The two networks illustrated in figures \textbf{\ref{fig:interaction_evolution}A} and \textbf{\ref{fig:interaction_evolution}B} show that the top four species (s3, s0, s8 and s7) with higher total cohesion levels $ s_{\alpha} $ remain extant after the community assembles. Additionally, the bottom three species (s1, s9 and s6) with lower $ s_{\alpha} $ have more reactions in their reaction networks than the average. To test the generality of these observations, I calculate the median survival probability after community assembly for each $ s_{\alpha} $ rank position in the random community, across all instances of community assembly. Figure \textbf{\ref{fig:interaction_evolution}C} shows a clear correlation between these two measures, indicating that species with lower $ s_{\alpha} $ go extinct more easily than more cohesive species. The survival probability is also plotted as a function of individual performance rank in figure \textbf{\ref{fig:interaction_evolution}C}. The individual performance of a species is calculated here by measuring its abundance at equilibrium when grown in isolation (SI, subsection \ref{subsec:fitness_calculation} for details on its calculation). Interestingly, individual performance does not predict survival probability as well as total cohesion level, suggesting that in these experiments, the individual performance of a species becomes decoupled from its probability of success. This observation reflects the well-known fact that the success of a species is context-dependent, and observing a species in isolation does not measure its performance in the relevant environment \citep{Tikhonov2016, McGill2006, Mcintire2014}.\par
+			The stabilization of the communities during the assembly is normally accompanied by a cascade of extinctions.
+			To investigate how the community-level cohesion changes over the course of community assembly, I measure $ \Theta $ after the occurrence of every extinction across all simulations. This variation can be seen in figure \textbf{\ref{fig:interaction_evolution}D}, where the binned averaged value of all measures of $ \Theta $ is represented during the first 500 units of time for all simulations. A systematic increase of community-level cohesion during the first half of measured time, and following stabilization near $ \Theta = 0 $ is observed. This increase is due to a faster decrease in community competition and facilitation levels, $ \braket{\bar{C}} $, and $ \braket{\bar{F}} $, averaged across simulations.  (\textbf{\ref{fig:interaction_evolution}D, inset}).\par
+			\begin{figure}
+				\centering			
+				\includegraphics[width=\textwidth]{community_coalescence_plots.pdf}
+				\caption{\textbf{Results from community coalescence experiments}. (\textbf{A}) Each simulated community is plotted in a competition-facilitation diagram. Communities above the dashed line $ \braket{C} = \braket{F} $ have $ \Theta > 0 $, and thus they are in the facilitation-dominated regime. Communities below the dashed line have $ \Theta <0 $, and therefore they belong to the competition-dominated regime. The extremes of each regime are selected (blue and red dots), and coalescence experiments where one community from the blue group mixes with one community from the red group are performed, only for communities of richness 4. (\textbf{C}) Altruistic communities ($ \Theta > 0 $) outperform competitive communities ($ \Theta < 0 $) in the latter experiments. In this elimination assay, each column represents one coalescence instance, and each element in a column is a species. Extinctions are coloured to match the group in plot A to which the extinct species belonged. There is a higher proportion of extinct species from the red group (more red tiles than blue tiles). (\textbf{B}) The outcome of community coalescence is predicted by community-level cohesion.  The similarity between the post-coalescence community and the resident community, $ S (\mathcal{C}_P, \mathcal{C}_R) $ is plotted as a function of the community cohesion difference $ \Delta \Theta $ between them, for all possible coalescence events between 2 communities of richness 5. Shown is binned mean (100 bins) over communities with similar $ \Delta \Theta $ (solid line) $ \pm \sigma $ (shaded) (\textbf{B, inset}) Histogram of similarity showing that monodominance of one community after coalescence  ($ S = 0 \text{ , } S = 1 $) is more frequent than a perfect mixing ($ S = 0.5 $)}
+				\label{fig:community_coalescence_results}
+			\end{figure}
+			Having assembled many communities, and measured their cohesion levels, I am in disposition to perform community coalescence experiments of pairs of communities.\par
+			Consider a coalescence event, whereby two communities previously separated come into sudden contact. In general, monodominance of one community after the mix reaches stable state is not guaranteed. Instead, both communities will contribute species to the final equilibrium. Can we predict which community will do so more successfully?\par
+			To answer this question, I firstly use all the simulated communities to populate a facilitation-competition (F-C) diagram where the axes are  $ \braket{F} $ and $ \braket{C}$; community-level facilitation and competition respectively. They are calculated by averaging the non-diagonal elements of facilitation and competition matrices (SI, subsection \ref{subsec:relationships}). Communities are scattered across the plot, bringing out two regimes: a mutualistic regime where $  \braket{F} > \braket{C} $, and a competitive regime where $ \braket{F} < \braket{C} $. The former case has a community-level cohesion $ \Theta $ satisfying, $  \Theta > 0$ whereas the latter has $ \Theta < 0 $ for the former (SI, subsection \ref{subsec:relationships}). I then select communities with 4 species from the extremes of the two regimes, $ \Theta >> 0 $ and $ \Theta << 0 $. This produces two groups of communities with higher and lower levels of cohesion (blue and red strips in figure \textbf{\ref{fig:community_coalescence_results}A}). I now perform coalescence experiments where a resident community $\mathcal{C}_R$  from one group is mixed with an invading one $ \mathcal{C}_I $ from the other group. One would expect that communities from the mutualistic regime are more successful on average than those from the competitive regime. To confirm this, results from an \say{elimination assay} where a community from each group competes, are presented in figure \textbf{\ref{fig:community_coalescence_results}C}. Near five hundred pairs of communities are mixed, and correspond to the columns in figure  \textbf{\ref{fig:community_coalescence_results}C}. For each pair, species from both communities are equilibrated together. The rows in figure \textbf{\ref{fig:community_coalescence_results}C} correspond to these species, and are ordered increasingly according to their total cohesion level $ s_{\alpha} $. For each species that goes extinct during the coalescent event, its provenance is identified (i.e. does it come from the blue or the red community?), and the corresponding tile in figure \textbf{\ref{fig:community_coalescence_results}C} is coloured accordingly. The dominant colour is red, confirming that communities in the competitive regime experiment more extinctions, and thus, are worse at contributing with their members to the final equilibrium. Note that the richness of coalescing communities is kept constant to avoid selection effects.\par
+			Finally, I select the $ N $ communities with 5 species (figure \textbf{\ref{fig:community_assembly_results}B)}, and perform  all $ {N}\choose{2} $ possible community coalescence events in which a resident community $\mathcal{C}_R$ is mixed with an invading one $ \mathcal{C}_I $. At each event, I calculate the similarity of between post-coalescence and resident communities as the normalized scalar product of their species abundance vector at stable state.
+			\begin{linenomath*}
+				\begin{equation}
+					S(\mathcal{C}_R, \mathcal{C}_P) = \frac{\vec{N^R_{\infty}} \cdot \vec{N^P_{\infty}}}{\sqrt{|\vec{N^R_{\infty}}|}\sqrt{|\vec{N^P_{\infty}}|}}
+				\end{equation}
+			\end{linenomath*}
+			Additionally, I calculate the community-level cohesion difference $ \Delta \Theta = \Theta_R - \Theta_I$ between the two coalescing communities. A clear non-linear correlation emerges when I plot similarity versus cohesion difference (figure \textbf{\ref{fig:community_coalescence_results}B}). The larger the difference between community cohesion, the more similar is the post-coalescent community to its more cohesive parent. The non-linearity of this curve is a manifestation of the asymmetrical dominance reported in the first works of community coalescence \citep{Gilpin1994}. This is more evident when looking at the histogram of similarities (\textbf{\ref{fig:community_coalescence_results}B, inset}) for the coalescence experiments performed, where monodominance of one community ($ S = 1, S = 0 $) is more frequent than a perfect mixing ($ S = 0.5 $)
+		\section{Discussion}
+			\hspace{15pt}A frequent process by which new microbial networks emerge is through the fusion of two or more communities, an event that has been termed community coalescence  \citep{Rillig2015}. Numerous theoretical and experimental studies suggest that coalescing communities behave as \say{coherent wholes}, and compete against each other like coordinated armies \citep{Gilpin1994, Toquenaga1997, Livingston2013, Tikhonov2016, Tikhonov2017, Sierocinski2017, Lu2018}. To date, competition in coalescence is the most studied interaction, but more work is needed to understand how other types of interactions lead to different coalescence outcomes \citep{Castledine2020}. In this work, I investigated the behaviour of pairs of coalescent communities that harboured organism interdependence through metabolic complementarity (i.e., cross-feeding). How does including mutualistic interactions affect the outcome of community coalescence?\par
+			To answer this question, I quantified the coherence of these consortia through a metric of community cohesion, $ \Psi $, which computes the level of positive feedback between every pair of species in the community. I found that $ \Psi $ increased on average  during community formation (Figure \textbf{\ref{fig:community_assembly_results}D}). Tracking cohesion in coalescence events revealed a non-linear relationship between cohesiveness and post-coalescence success, that is, more cohesive communities were favoured during species sorting and therefore dominated at equilibrium. This result constitutes strong evidence supporting that a community undergoing a coalescence event behaves as a 'coherent whole'. It is expected that members of cohesive communities have been ecologically co-selected; those individuals from a key taxon whose presence provides an advantage for individuals from other taxa are positively selected \citep{Sierocinski2017}. This contrasts with the alternative hypothesis suggesting that those communities harbouring species with higher individual performance are the ones that would dominate in the formation of communities. Only weak support was found for this hypothesis (Figure \textbf{\ref{fig:community_assembly_results}C}). These two hypotheses are two extremes of a continuum. Although it certainly seems an exaggeration to view the community as a \say{super-organism}, it is also a perilous simplification to consider it as a mere collection of individual species, ignoring the fact that coevolutionary processes can play an important role in it \citep{Rillig2017}.\par
+			A recent idea that smoothly interpolates between these to extremes has been proposed in \citep{Pascual-Garcia2020}. Metabolically Cohesive microbial Consortium (MeCoCos) are groups of microbes that exhibit a positive feedback loop, whereby they engineer their environment by both creating and using resources. They constitute an intermediate level of organization between the community and the individual. These groups have been hypothesized to be resistant against invasions because no other species would be able to harvest resources rapidly enough to compete with the established members. My finding that more metabolically cohesive consortia are more successful in community coalescence experiments confirms their hypothesis. A possible line for future research would be to use the metric of cohesion to identify MeCoCos in the synthetic communities, and track their behaviour to try to answer the following question:  can we understand microbial community assembly as a succession of MeCoCos coalescence events?\par 
+			Another prediction of \citet{Pascual-Garcia2020} is that MeCoCos efficiently deplete resources to the lowest concentration. This result was obtained in the absence of mutualistic interactions by \citet{Tikhonov2016}, who showed that when two communities compete, the one that is more efficient at simultaneously depleting all substrates (higher community-level fitness), will dominate.  The \textit{cohesive} communities of my work behave in the same way as the \textit{fit} communities in his work when it comes to community coalescence (compare figure \textbf{\ref{fig:community_coalescence_results}B} here with figure 4D in \citet{Tikhonov2016}). This confirms the above prediction that more cohesive communities are also more efficient at simultaneously depleting all resources.\par
+			The dynamics of the model presented in \citet{Tikhonov2016} conveniently took the form of optimizing a community level function inspired by the work of \citet{Arthur1969}. In this more general model, collective dynamics were not reducible to solving an optimization problem. Yet, the results presented here are consistent with the ones in \citet{Tikhonov2016}, reinforcing the relevance of this approach as a method for characterizing community coalescence events in more realistic communities. These results, and the ones reported in works of community-community competition up to date, have been in agreement across different models, and types of interactions. Therefore, the coherence exhibited by microbial communities seems to be a general consequence of ecological interactions, resource partitioning, and the community shaping its own environment (niche construction).\par
+			Several simplifications were made in this study. First, the parameters of the model were kept constant throughout the simulations. The reason behind this is that the aim of this study was to show that the strength and type of interactions present in microbial communities influence the outcome of community coalescence. For this purpose, experimental parametrization of the model was not strictly necessary and was left to be developed in future work. Second, the model used here left out stochastic effects and spacial structure. Although these two considerations are tremendously important in most cases, their removal in this work helped to smoothly build on the work of \citet{Tikhonov2016} and to make the dynamics computationally tractable. Third, the measure of community-level cohesion, $ \Theta $, was calculated as the rough average of all pairwise cohesion levels. A more refined measure of community cohesion, for example, counting the number of closed feedback loops, weighted by their strength,  might help reduce the noise of the correlation shown in figure \textbf{\ref{fig:community_coalescence_results}B}. %Additionally, a less coarse measure of community cohesion will help to identify and track MeCoCos more precisely.
+			\subsection{Empirical relevance}
+				\hspace{15pt}Measuring cohesion in the synthetic communities used in this work was possible because the theoretical framework of the model provided readily usable reaction networks. The aim of these is to resemble bacterial metabolic pathways, and thus lay out the foundations for the formulation of consumer-resource models that characterize more realistic microbial communities. A promising direction of research would be to focus on parametrizing the model based on available high-resolution metabolic networks in the literature and then attempting to use it, in combination with the proposed cohesion measure, to predict the outcome of real-life community coalescence events either \textit{in-vitro} or \textit{in-vivo}. This could then be applied then to drive the community in question, through successive coalescence events, towards states where certain functions are optimized, as demonstrated in \citet{Sierocinski2017}, and suggested in \citet{Rillig2016}. Another example of this is the coalescence events whereby microbial communities are introduced in degraded soil ecosystems in order to restore N-cycle functioning \citep{Calderon2017}. Finally, the predictive power of the presented cohesion metric has a relevant application in the area of faecal microbiota transplantation. This is a method to directly change the recipient's gut microbiota by infusion of distal faecal material from a healthy donor into the gastrointestinal tract of a recipient in order to reestablish healthy intestinal flora \citep{Wang2019, Wilson2019}. The application of the technique presented here to this discipline can yield beneficial insights from an anthropocentric perspective. 
+			\subsection{Conclusion}
+				\hspace{15pt}Only recently we have begun to have access to the complex nature of microbial community assembly. Community coalescence, a process that is likely to play a significant role in the formation of microbial consortia, has just begun to be studied both theoretically and experimentally. On the theoretical side, oversimplifying assumptions are often made about the interactions present in the community. This work presents a way of measuring the level of cohesion in more realistic communities and shows that more cohesive communities are more successful in coalescence events. The results obtained here are consequence of the existence of ecological interactions, and resource partitioning, common to all microbial communities. Therefore, the methodology presented here has the potential to shed light upon experimental communities in real coalescence events.
+	\section{Acknowledgements}
+		 \hspace{15pt}I thank Dr Samraat Pawar and Jacob Cook for their comments in previous versions of the manuscript. I thank the \say{Marsland cult} (Dr Samraat Pawar, Jacob Cook, Tom Clegg, Dr Emma Cavan, and Dr Tom Smith), for inspiring discussions throughout the development of the project. I thank peer reviewers (Sam Turner, Hovig Artinian, Miles Nesbit, Jeronimo Cid) for their thoughtful thoughts on the manuscript.
+		
+	\subsection*{Data and Code Availability}
+		\hspace{15pt}The code used to implement the model, simulate the communities, perform the analysis, and plot the figures is publicly available in a GitHub repository that can be found \href{https://github.com/pablolich/master_thesis/tree/master/code}{here} or at the url \verb|https://github.com/pablolich/master_thesis/tree/master/code|
+\end{linenumbers}
+\clearpage
+\bibliographystyle{agsm}
+\bibliography{/Users/pablolechon/library}
+\newpage
+\pagenumbering{arabic}
+\section{Supplementary Information}
+	\subsection{Reversible enzyme kinetics}\label{subsed:reversible_enzyme_kinetics}
+		Outside the bacterial cell, the energy resides in the form of chemical potential $ \mu $ held by the metabolites, and biochemical reactions inside the cell produce energy due to a difference in the chemical potentials of substrate and product. I assigned chemical potentials to each metabolite according to
+		\begin{linenomath*}	
+			\begin{equation}
+			\mu_{\beta} = E \left(1 - \sqrt{\frac{\beta-1}{m-1}}\right)
+			\end{equation}
+		\end{linenomath*}	
+		where $ \beta = 1, \dots, m $ and $ E $ is the energy of the most energetic metabolite.
+		%Justify this next paragraph 
+		I have chosen this chemical potential function because I hope to find papers where they explain that there is a hierarchy on the metabolite energetic spectrum. This means that the energy produced by a reaction of the type $ (\beta, \beta+1) $ decreases as you go down the hierarchy. Reactions involving metabolites situated higher in the hierarchy are more energetic than reactions that involve those lower in the hierarchy.\par
+		The rate at which a given chemical reaction transforms substrate into product is modelled using reversible Michaelis-Menten enzyme kinetics. Thus, the model considers chemical reactions where a substrate $ S $ binds to an enzyme $ E $ to form an enzyme-substrate complex $ ES $, which in turn produces a product $ P $ and recovers enzyme $ E $. 
+		\begin{linenomath*}	
+			\begin{equation}\label{eq:react_shceme}
+			E + S \rightleftharpoons ES \rightleftharpoons E + P
+			\end{equation}	
+		\end{linenomath*}
+		The choice of fully reversible enzyme kinetics, instead of the traditional assumption of irreversibility in the second reaction, aims to capture more accurately the nature of biochemical reactions taking place in microbial communities. In these reactions the Gibbs energy change $ \Delta G $ is not always big, which implies that the reaction of product formation can reach equilibrium at a similar time scale as the formation of the complex \citep{Keener2008}. In this case, the traditional irreversible Michaelis-Menten scheme breaks down, and more elaborated frameworks, like the fully reversible one that this model offers, need to be used.\par
+		To comply with 2$ ^{nd} $ law of thermodynamics, the network $ G_{\alpha} $ is completely hierarchical, ie. the edges are unidirectional ($ x < y $), going from the more energetic, to the less energetic metabolite. Thus, for the reaction scheme in \ref{eq:react_shceme} and the imposed thermodynamic constraint only reactions where $ \Delta G^0 = \mu_P - \mu_S < 0 $ can take place.\par
+		With all the above considerations, the expression for the rate of reaction $ i $ possessed by strain $ \alpha $ is given below. A formal derivation of equation \ref{eq:rate_exp} can be found in \citet{Hoh2000}
+		\begin{linenomath*}	
+			\begin{equation}\label{eq:rate_exp}
+			q_{\alpha i} = \frac{q_m^{\alpha i}S_{\alpha}(1 - \theta_{\alpha})}{K_S^{\alpha i} + S_{\alpha}(1 + k_R^{\alpha i}\theta_{\alpha})}
+			\end{equation}
+		\end{linenomath*}
+		Here, $ \theta_{\alpha} $ measures how far is the reaction from equilibrium (0 being the furthest, and 1 being equilibrium).
+		\begin{linenomath*}	
+			\begin{equation}
+			\theta = \frac{[P]}{[S]K_{eq}}
+			\end{equation}	
+		\end{linenomath*}
+		where [   ] denote concentration and $ K_{eq} $ is the equilibrium constant
+		\begin{linenomath*}	
+			\begin{equation}
+			K_{eq}= \exp\left(\frac{-\Delta G^{0} - \eta\Delta G_{ATP}}{RT}\right)
+			\end{equation}
+		\end{linenomath*}
+		The energy produced by the reaction is then stored in the form of ATP molecules. In the model, $ \eta $ represents the moles of ATP molecules produced per mole of reaction. For a given reaction ($ x, y $) eta I calculate eta as 
+		\begin{linenomath*}	
+			\begin{equation}
+			\eta = \frac{y - x}{m}
+			\end{equation}
+		\end{linenomath*}
+		which represents the normalized metabolite gap between substrate and product of the reaction. Therefore, the higher the gap, the more energy will be stored.\par
+	\subsection{Table of parameter values and meaning}\label{subsec:parameters}
+		\begin{table}[h]
+			\centering
+			\begin{tabular}{ |c|l|l| } 
+				\hline
+				Symbol & Name & Value \\
+				\hline
+				m &Number of metabolites &  15 \\
+				s &Number of strains &  10 \\
+				$ \Delta G_{ATP} $ &ATP Gibbs energy & $ 7.5\cdot 10^{3} J \ mol^{-1}$\\
+				$ \mu_0 $ & Most energetic metabolite &  $ 3\cdot 10^{6} J $ \\ 
+				$ q_m $ &Maximum reaction rate &  1 $ mol \ s^{-1} $ \\
+				$ K_S $ &Saturation constant &   0.1 $ mol \ l^{-1} $ \\
+				$ k_r $ &Reversibility constant &  10 \\
+				g & Growth factor & 1 \\
+				$ \kappa $  & Externally supplied resource &  2 $ mol \ l^{-1} \ s^{-1} $\\
+				$ \gamma $ &Dilution rate &   1 $ s^{-1} $\\
+				$ N_{0}$ & Populations initial conditions & $ (1, 1, \dots , 1) $ \\
+				$ C_{0}$ & Concentrations initial condition & $ (2, 2, \dots , 2) \ mol \ l^{-1}$\\
+				$ R $ & Ideal gas constant & 8.314 $ J \ K^{-1} \ mol^{-1} $\\
+				$ T $ & Temperature & 298 $ K $\\
+				\hline
+			\end{tabular}
+			\caption{Parameter symbols, names and values}
+			\label{tab:parameters}
+		\end{table}
+	\subsection{Relationship between $ \langle F \rangle $, $ \langle C \rangle $, and $ \Theta $,}\label{subsec:relationships}
+		Recall from section \ref{subsec:cohesion_metric} that the community-level cohesion $ \Theta $ is calculated as the average of the non-zero elements of the community cohesion network's adjacency matrix, $ \Psi $ (equation \ref{eq:theta}), that is
+		\begin{linenomath*}
+				\begin{equation}
+					\Theta = \dfrac{1}{{s+1 \choose 2}} \sum_{i \leq j} \frac12(f_{ij} + f_{ji}) - c_{ij} 
+				\end{equation} 
+		\end{linenomath*}
+		Let now $ \langle F \rangle $ and $ \langle C \rangle $, be the community-level facilitation and competition levels; defined as the average of the non-diagonal elements of the facilitation and competition matrices $ F $ and $ C $, respectively 
+		\begin{linenomath*}
+			\begin{equation}
+				\langle C \rangle = \dfrac{1}{s(s+1)}\sum_i\sum_j f_{ij} \quad , \quad \langle F \rangle = \dfrac{1}{s(s+1)}\sum_i\sum_j c_{ij}
+			\end{equation}
+		\end{linenomath*}
+		Applying the binomial theorem and recalling that $ f_{ii} =  c_{ii} = 0$, and that $ C $ is symmetric we can write
+		\begin{linenomath*}
+			\begin{align*}
+				\Theta	&= \dfrac{2}{s(s+1)} \sum_{i \leq j} \frac12(f_{ij} + f_{ji}) - c_{ij}\\
+				&= \dfrac{1}{2} \dfrac{2}{s(s+1)}\sum_i\sum_j f_{ij} - \dfrac{2}{s(s+1)}\dfrac{1}{2}\sum_i\sum_j c_{ij}\\
+				&= \langle C \rangle - \langle F \rangle
+			\end{align*}
+		\end{linenomath*}
+	\subsection{Calculation of individual performance $ f_{\alpha} $}\label{subsec:fitness_calculation}
+		A direct measure of individual performance of a bacterial strain is given by its abundance at equilibrium when grown in isolation. Therefore, calculating the individual performance of every species present across all simulations requires $ s \cdot n_{s} $ additional integrations, which is computationally demanding. Consequently, instead of calculating the individual performance by integrating, I predict it based on the number of non-redundant substrates a species is able to consume. Let $ x_{\alpha} $ be the set of substrates of species $ \alpha $, and $ \mathcal{X}_{\alpha} $ the sequence of substrates of species $ \alpha $. That is, the latter is a collection of unique elements, and the former is the actual sequence of substrates possessed by the strain, the number of non-redundant substrates is calculated as
+		\begin{linenomath*}
+			\begin{equation}
+				f_{\alpha} = 2 |x_{\alpha}| - |\mathcal{X}_{\alpha}|
+			\end{equation}
+		\end{linenomath*}
+		\begin{SCfigure}[1][h]
+			\centering			
+			\includegraphics[width=0.33\textwidth]{fitness_abundance.pdf}
+			\caption{Abundance of 500 random species at isolated equilibrium as a function of proxy of individual performance. Shown is binned mean (10 bins) over species with similar individual performance. Errorbars are 1 standard error.}
+			\label{fig:fitness_abundance}
+		\end{SCfigure}
+
+\end{document}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__appname__ = '[coalescence.py]'
+__appname__ = '[community_assembly.py]'
 __author__ = 'Pablo Lechon (plechon@ucm.es)'
 __version__ = '0.0.1'
 
