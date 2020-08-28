@@ -77,7 +77,7 @@ def main(argv):
     #place)
     N_reac = comb(m, 2, exact = True)
     #Perform n_simul simulations
-    n_simul = 2000 
+    n_simul = 500 
     #Generate reaction network for each strain
     tot = s*n_simul
     n_reac_s = np.zeros(tot, dtype = 'int')
@@ -134,6 +134,7 @@ def main(argv):
     n_label = np.array([])
 
     pbar = ProgressBar()
+    print('Assemblying communities')
     for  n in pbar(range(n_simul)):
 
         #Network
@@ -243,19 +244,19 @@ def main(argv):
     cols = names(s, m)
     names_met = [i for i in range(len(cols)) if cols[i].startswith('m')]
     df_sol = pd.DataFrame(np.transpose(zn), columns = cols)
-    df_sol.iloc[:,names_met] = np.transpose(degree_n)
+    #df_sol.iloc[:,names_met] = np.transpose(degree_n)
     #Names betweenness
     nam = letter_number('b', m)
-    df_bet = pd.DataFrame(np.transpose(betweenness_n), columns = nam)
-    df_sol = pd.concat([df_sol, df_bet], axis = 1)
-    df_sol = pd.concat([df_sol, pd.DataFrame(F_n, columns = ['F'])], axis = 1)
+    #df_bet = pd.DataFrame(np.transpose(betweenness_n), columns = nam)
+    #df_sol = pd.concat([df_sol, df_bet], axis = 1)
+    #df_sol = pd.concat([df_sol, pd.DataFrame(F_n, columns = ['F'])], axis = 1)
     df_sol.insert(0, 't', tn)
     df_sol.insert(0, 'n_simulation', n_label)
     #Create dataframe of stable community compositions
     df_stable = pd.DataFrame(zn_stable, columns = cols)
-    df_stable = pd.concat([df_stable, pd.DataFrame(Fn_stable, 
-                                                   columns = ['F'])], 
-                          axis = 1)
+    #df_stable = pd.concat([df_stable, pd.DataFrame(Fn_stable, 
+    #                                               columns = ['F'])], 
+    #                      axis = 1)
     df_stable.insert(0, 'n_simulation', np.arange(n_simul))
     #Save
     df_sol.to_csv('../data/coal_time_series.csv')

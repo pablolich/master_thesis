@@ -106,7 +106,7 @@ def main(argv):
         inds_surv = np.where(outcome['stable.state']<1)[0]
         temp[inds_surv] = np.array(outcome['team'])[inds_surv]
         #Sort according to cohesion
-        sort = np.argsort(np.array(outcome['coh'] - outcome['comp']))
+        sort = np.argsort(np.array(outcome['facilitation'] - outcome['competition']))
         su[2*r*i:2*r*(i+1)] = temp[sort]
 
     tile_p = pd.DataFrame({'x':x, 'y':y, 'su':su, 

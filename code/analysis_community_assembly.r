@@ -1,5 +1,4 @@
 rm(list=ls())
-dev.off()
 require(ggplot2)
 library(reshape2)
 library(stringr)
@@ -10,6 +9,7 @@ library(grid)
 library(gridExtra)
 library(igraph)
 source('coal_analysis_functions.R')
+
 
 #Compile all useful community data into one object
 ##############################################################################
@@ -46,9 +46,9 @@ surv_comp_long['richness'] = richness
 #Load data about reaction network of species#
 network = read.table('../data/coal_network.csv', sep = ',', header = T,
                      colClasses = c('n_simulation'='numeric','strain'='numeric','substrate'='character',
-                                    'substrate'='character','maintenance'='numeric', 'surplus'='numeric',
-                                    'n_reac'='numeric', 'cohesion'='numeric','competition'='numeric', 
-                                    'autocohesion'='numeric'), row.names = 1)
+                                    'product'='character','maintenance'='numeric', 'surplus'='numeric',
+                                    'n_reac'='numeric', 'facilitation'='numeric', 
+                                    'competition'='numeric'), row.names = 1)
 #Change format of one column quickly
 network$strain = paste('s', network$strain, sep = '')
 
@@ -78,8 +78,8 @@ network['fitness'] = fitness_proxy
 #Merge with surv_comp_long
 all_data = merge(surv_comp_long, network, by = c('n_simulation', 'strain'))
 #Get facilitation and competition indices each community
-facilitation = aggregate(all_data[,16], list(all_data$n_simulation), mean)
-competition = aggregate(all_data[,17], list(all_data$n_simulation), mean)
+facilitation = aggregate(all_data[,10], list(all_data$n_simulation), mean)
+competition = aggregate(all_data[,11], list(all_data$n_simulation), mean)
 #Assign each community to a group based on their comp and fac levels.
 colors = distance(competition$x, facilitation$x, 1.4, 0.2)
 #Get a unique value for richness per simulation
@@ -737,7 +737,7 @@ fitness_abundance = ggplot(average_fitness_abundance, aes(x = fitness, y = K_av)
   theme(panel.background = element_blank(), 
         panel.border = element_rect(colour = "black", fill=NA, size = 1),
         axis.text = element_text(size = 15), 
-        axis.title.x = element_text(size = 25),
+        axis.title.x = element_text(size = 22),
         axis.title.y = element_text(size = 25),
         legend.position = c(0.85, 0.7),
         legend.text = element_text(size = 15),
@@ -747,7 +747,7 @@ fitness_abundance = ggplot(average_fitness_abundance, aes(x = fitness, y = K_av)
         aspect.ratio = 1)+
   # scale_x_continuous(breaks = c(1, 5, 10, 15), 
   #                    labels = c('1', '5', '10', '15'))+
-  labs(x = expression(paste('Individual Fitness ', italic(f)[alpha])),
+  labs(x = expression(paste('Individual performance ', italic(f)[alpha])),
        y = expression(italic(symbol("\341")*N[infinity]^0*symbol("\361"))))+
   ggsave(filename = '../results/fitness_abundance.pdf', width = 4.3, height = 4)
 

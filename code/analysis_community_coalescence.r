@@ -17,8 +17,8 @@ data_hist = read.table('../data/similarity_fitness copy.csv', sep = ',',
                        header = T)
 
 #Get facilitation and competition indices each community
-facilitation = aggregate(all_data[,16], list(all_data$n_simulation), mean)
-competition = aggregate(all_data[,17], list(all_data$n_simulation), mean)
+facilitation = aggregate(all_data[,10], list(all_data$n_simulation), mean)
+competition = aggregate(all_data[,11], list(all_data$n_simulation), mean)
 #Assign each community to a group based on their comp and fac levels.
 colors = distance(competition$x, facilitation$x, 1.4, 0.2)
 data_community = data.frame(competition$x, facilitation$x, colors)
